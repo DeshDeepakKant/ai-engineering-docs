@@ -3,11 +3,12 @@ id: 18-tools-in-langchain
 title: "Tools in LangChain"
 sidebar_label: "18. Tools in LangChain"
 sidebar_position: 18
-description: "Study guide and architectural notes for Tools in LangChain (Generative AI using LangChain (CampusX))."
+description: "Tools in LangChain - Architectural deep dive, implementation patterns, and enterprise best practices."
 tags:
+  - langchain
+  - lcel
+  - python
   - campusx
-  - 02-lcel-local-llms
-  - ai-engineering
 ---
 
 # 📹 Tools in LangChain
@@ -15,192 +16,120 @@ tags:
 <div className="video-card" style={{border: '1px solid #30363d', borderRadius: '8px', padding: '16px', marginBottom: '24px', background: 'rgba(56, 139, 253, 0.05)'}}>
   <div style={{display: 'flex', gap: '16px', flexWrap: 'wrap'}}>
     <div><strong>Instructor:</strong> Nitish Singh (CampusX)</div>
-    <div><strong>Duration:</strong> 45m 16s</div>
-    <div><strong>Playlist:</strong> Generative AI using LangChain (CampusX)</div>
+    <div><strong>Duration:</strong> 2716</div>
+    <div><strong>Course:</strong> Module 2: LCEL, Local LLMs & Tool Calling</div>
     <div><strong>Watch Link:</strong> <a href="https://www.youtube.com/watch?v=etnLX7m2MiA" target="_blank" rel="noopener noreferrer">YouTube Lecture ↗</a></div>
   </div>
 </div>
 
-## 📌 Executive Summary & Learning Objectives
+## 📌 Executive Summary
 
-This lecture covers **Tools in LangChain**, focusing on production implementations, edge cases, and industry standards:
-- Core intuition, architecture, and underlying mechanisms.
-- Key differences between theoretical research implementations and scalable enterprise patterns.
-- Concrete Python walkthroughs, error recovery, and performance optimization.
+The paradigm shift from Generative AI to Agentic AI represents the evolution from passive, single-turn completion prompts to autonomous, goal-driven computational systems. While traditional GenAI generates text in response to an isolated prompt, an Agent observes an environment, plans sequences of actions, executes tools, evaluates feedback, and self-corrects until a termination condition is satisfied.
+
+This lesson explores perception-action feedback loops, the ReAct (Reasoning + Acting) pattern, architectural trade-offs between heuristic pipelines and autonomous agent systems, and enterprise reliability boundaries.
 
 ---
 
-## 🏗️ Architecture & Conceptual Workflow
+## 🏗️ System Architecture & Execution Flow
 
 ```mermaid
-flowchart LR
-    P["ChatPromptTemplate\n(System + User Input)"] -->|Pipe Operator '|'| M["ChatModel\n(Llama 3 / GPT-4o)"]
-    M -->|Pipe Operator '|'| O["OutputParser\n(StrOutputParser / Pydantic)"]
-    O --> S["Structured Result / Stream Token"]
+flowchart TD
+    Goal["User Objective / Goal"] --> Plan["1. Reason & Plan
+(Formulate Action Strategy)"]
+    Plan --> Act["2. Act & Tool Execution
+(Query APIs / DB / Terminal)"]
+    Act --> Obs["3. Observe Environment
+(Parse Tool Results & State)"]
+    Obs --> Eval{"Goal Achieved?"}
+    Eval -->|No: Error / Missing Data| Plan
+    Eval -->|Yes| Finish["Final Synthesized Answer"]
 ```
 
 ---
 
 ## 📖 Core Concepts & Technical Deep Dive
 
-### 1. Architectural Foundations
-In modern production AI engineering, **Tools in LangChain** is essential for ensuring reliability, low latency, and deterministic outcomes. As AI systems evolve from naive prompt-in / completion-out scripts into distributed systems, engineers must handle:
-- **State management & consistency:** Ensuring intermediate states and tool invocations are tracked.
-- **Error boundaries & recovery:** Graceful degradation when external LLMs or vector stores encounter rate limits or network partitions.
-- **Resource utilization & cost efficiency:** Caching common queries and reducing unnecessary foundation model token expenditure.
+### 1. The Autonomous Feedback Loop
+Agentic systems execute closed-loop control:
+1. **Perception:** Ingesting user prompt, environmental context, and past turn history.
+2. **Reasoning (Cognition):** Breaking complex goals into sub-tasks and determining which tool to invoke with specific arguments.
+3. **Action:** Executing tool calls against real-world systems (SQL databases, REST APIs, local file systems).
+4. **Observation:** Ingesting execution output or error traces and updating working memory.
+5. **Reflection / Correction:** Re-evaluating the plan if execution fails and dynamically selecting alternative routes.
 
-### 2. Operational Considerations
-- **Latency Optimization:** Pre-computing embeddings, utilizing asynchronous non-blocking event loops, and streaming tokens via Server-Sent Events (SSE).
-- **Security & Sandboxing:** Validating inputs before ingestion, sanitizing LLM outputs, and isolating tool execution environments.
+### 2. Generative AI vs Agentic AI
+- **Generative AI:** Feed-forward processing. The model receives a prompt, generates tokens autoregressively, and terminates. Any error in reasoning requires human re-prompting.
+- **Agentic AI:** Cyclical graph processing. The agent can loop, retry, verify its own work, and invoke multiple external tools over multiple turns before returning a final answer.
 
 ---
 
-## 💻 Production Implementation Walkthrough
+## 💻 Production Implementation
 
 ```python
-# Production Implementation Blueprint
-def run_production_pipeline():
-    print("Executing production pipeline...")
+from typing import TypedDict, Annotated, List
+from langgraph.graph import StateGraph, END
+import operator
 
-if __name__ == "__main__":
-    run_production_pipeline()
+class AgentState(TypedDict):
+    task: str
+    plan: List[str]
+    completed_steps: List[str]
+    is_finished: bool
+
+def planning_node(state: AgentState):
+    print("--- PLANNING NEXT ACTION ---")
+    return {"plan": ["Check server metrics", "Restart failing pods"], "is_finished": False}
+
+def execution_node(state: AgentState):
+    print("--- EXECUTING TOOL ACTION ---")
+    return {"completed_steps": ["Server metrics checked: pod crashloop detected."]}
+
+def evaluation_node(state: AgentState):
+    print("--- EVALUATING TASK PROGRESS ---")
+    return {"is_finished": True}
+
+workflow = StateGraph(AgentState)
+workflow.add_node("planner", planning_node)
+workflow.add_node("executor", execution_node)
+workflow.add_node("evaluator", evaluation_node)
+
+workflow.set_entry_point("planner")
+workflow.add_edge("planner", "executor")
+workflow.add_edge("executor", "evaluator")
+workflow.add_edge("evaluator", END)
+
+app = workflow.compile()
+print("Agentic Feedback Loop initialized successfully.")
 ```
 
 ---
 
-## 💡 Production Best Practices & Tips
+## ⚙️ Production Gotchas & Best Practices
 
-:::tip Production Deployment Guideline
-When deploying Tools in LangChain in enterprise environments, always configure automated retries with exponential backoff and telemetry tracing (such as OpenTelemetry or LangSmith).
+:::tip Recursion Limits
+Always configure explicit `recursion_limit` settings (e.g. `config={"recursion_limit": 25}`) on agent graphs to prevent infinite loops and runaway API costs when tools fail repeatedly.
 :::
 
-:::warning Common Failure Modes
-Watch out for state contamination across concurrent requests. Ensure each session or user interaction uses an isolated thread ID or execution context.
+:::warning Avoid Unbounded Agent Independence
+Never allow an autonomous agent to execute destructive actions (dropping tables, sending customer emails, executing shell commands) without human review or strict sandboxing.
 :::
 
 ---
 
-## 🎯 Key Takeaways & Quick Reference
+## 📊 Architectural Reference & Comparison
 
-| Dimension | Production Standard | Pitfall to Avoid |
+| Characteristic | Generative AI | Agentic AI |
 | :--- | :--- | :--- |
-| **Execution** | Async / Non-blocking with timeouts | Synchronous blocking calls in event loops |
-| **Data Validation** | Strict Pydantic v2 schemas | Untyped dictionary access |
-| **Monitoring** | Distributed tracing & latency percentiles | Relying only on standard console logs |
-
-## ⏱️ Lecture Timeline & Key Topics
-
-| Timestamp | Key Topic / Concept Discussed |
-| :--- | :--- |
-| **00:00:00** | हाय गाइस, माय नेम इज नितेश एंड यू वेलकम... |
-| **00:11:28** | एंड दैट इज व्हाई मैंने आपको वीडियो की... |
-| **00:22:30** | डेटाबेस प्रोडक्ट या फिर ऐप से। सो... |
-| **00:34:00** | मेरा फंक्शन। अब यहां पे मेन काम शुरू... |
-| **00:45:15** | में। बाय।... |
-
-
+| **Execution Flow** | Linear Feed-Forward | Cyclical Multi-Turn Loops |
+| **Tool Interaction** | Rare / Ad-hoc | Native & Central to Architecture |
+| **Error Handling** | Fails silently / Hallucinates | Observes error & self-corrects |
+| **State Management** | Ephemeral / Stateless | Durable Checkpointers (SQLite/Postgres) |
 
 ---
 
----
+## 📚 Key Takeaways & Enterprise Checklist
 
-## 📜 Complete Lecture Transcript (English)
-
-> **Language:** English | **Source:** `18 - Tools in LangChain ｜ Generative AI using LangChain ｜ Video 16 ｜ CampusX.en.srt` | **Total Segments:** 23 | **Word Count:** ~7,379 words
-
-<details>
-<summary><b>Click to expand full chronological transcript (23 timestamped intervals)</b></summary>
-
-#### ⏱️ [00:00 ➔ 00:02]
-
-Hi Guys, My name is Nitesh and welcome to my YouTube channel.  In this video also we will continue our Lang Chain playlist. Now before we start the video, I would like to give you a quick recap of what we have covered so far in this playlist.  Till now I have added 15 videos in this playlist and till now we can divide these 15 videos into two parts. In the first part, we covered the fundamentals of Lang Chen. Where I told you what components are there in Lang Chen.  And then we discussed those components one by one. Like the component with models , the component with crafts, the component with chess extra.  Then in the second part, we learned to build rack systems using Lang Chain.  So there we covered topics like document loaders, text splitters, vector stores, retrievers and finally we learned how to build a rack base system.  Now from here, with today's video, we are going to start the third part of this playlist. Where we will learn how to build agents using Lang Chain.  And in this part I am going to add three to four videos. And today's video will be kind of the first video for this segment. Ok?  So in today's video we will learn what are tools?  He is going to learn in Langchen.  So, I will explain to you in great detail what is the concept of tools ?  How that fits into the agent's roadmap and then I'll also teach you how you can create different types of tools within the lung chain.  On the whole, if you want to learn how to create agents using Lang chains and Lang graphs, then in both cases you need to have a good knowledge of the tools. So in that sense, today's video is superb.  So please make sure you watch this video end to end.  Now let's start the video. Now before moving ahead in the video, I want to give you an overview of exactly what topics we are going to cover in this segment of our agents. So first of all we will cover
-
-#### ⏱️ [00:02 ➔ 00:04]
-
-tools which is the topic of today's video.  Here we will learn to work with different types of tools.  You will also learn to make your own tools. A. After that, in the next video, we'll cover a concept called tool calling.  So what you do in tool calling is you connect the tool that you've created and your LLM so that they can work together. Ok?  So this is the topic of our next video.  After that we will cover the concept of agents.  Ok?  Where we will create agents using Lang Chen. And you'll notice that in the process of creating these agents, you'll use LLMs, you'll use tools, you'll use the concept of tool calling.  So basically, everything you have read till now will be added and we are going to cover all that in the agent. So, the topic of agents may take me one or two videos, but the idea is that I want to explain to you in detail how agents are created using Lang Chain.  Ok?  So now that you have this high level overview of what we're going to be doing in the next two to four videos. Now let's start today's video.   Let's focus on the tools.  So come on guys, now let's talk about tools.   To understand butt tools, we have to talk about LLMS first.  So LLMs as you know are very powerful natural language processing systems.  If I ask you what is the biggest advantage of LLMs ?  What is the biggest power of LLMs?  So maybe you will say two things. First you will know that LLMs have reasoning capability.  Which means that if you provide a question to LLMs, LLMs understands that question and breaks down how to answer that question.  So basically the LLM can think right?  This is the first core capability of an LL.M.  The second one is language generation.  Once LLM understands
-
-#### ⏱️ [00:04 ➔ 00:06]
-
-how to answer a given question, it then generates the answer for you word by word. Which means in a way can that LLM also has the capability to speak.  So in a nutshell, today's LLMs have two core capabilities.  First to think, second to speak.  Ok?  But that's it. Apart from this, LLMs do not have any other power. For example, if I ask an LLM, tell me brother, what is the best way to go from Delhi to Bombay?  So after thinking he will tell you the answer that flight is one option, train is one option, bus is another option.  But if I tell him that okay then book my train ticket.  So can an LLM book you onto a train ?  The answer is no.  LLM does not have the power to perform any task for you.  Ok?  So in a way you can say that LLM is like a body, a human body which has the capability to think and speak. But that human body does not have hands and legs.  Which means that he cannot execute any task on his own. Ok?  So there are a lot of tasks that today's computer systems can perform. But cannot do LLMs.  Such as fetching live wet weather data.  Ca n't do LLMs.  Doing maths reliably.  Ok ?  Basic addition subtraction will perform LL.  But if you give him a complex maths problem.  There is a good chance that the answer that comes out may not be reliable.  Because LLMs have not learned how to solve maths. He has learned language generation. Cannot call external API LLMS.  If you ask me to tweet on my behalf on Twitter, then I cannot do LLM.  Cannot run code and cannot interact with databases.
-
-#### ⏱️ [00:06 ➔ 00:08]
-
-So in the real world, computer systems can perform a wide range of tasks that LLMs do not have.  So as I said, you can see LLM like a human body which has a brain, meaning it can think and speak but it cannot do things, meaning it does not have hands and legs. So what are tools?  Tools are mechanisms that give your LLM hands and legs. Meaning you can create a tool to perform any given task and connect that tool with your LLM. As soon as you have performed this connection, now as soon as that task is given to LLM, LLM will execute that task with the help of that tool. Ok? Technically speaking, tools are nothing but functions in which you have written the logic to execute a task.  Now what you do is you package this function in a way that this function can interact with the LL. Ok?  So for example, what did you do?  You have created a function that can perform booking by visiting the IRCTC website.  Train booking.  Ok ?  And what did you do?  Packaged this function in such a way that these LLs can talk to this function.  Ok?  So now as soon as I ask this LLM to tell me the train from Delhi to Mumbai.  So this LLM will tell me.  Now as soon as I tell him to book me a ticket in this train. So since this LLM now has access to this function, this LLM will also book the ticket for you with the help of this function. And that is the power of tools, the
-
-#### ⏱️ [00:08 ➔ 00:10]
-
-more tools you add to your LLM, the more types of tasks your LLM can perform.  Ok? Look here, a very simple definition is written. A tool is just a Python function that is packaged in a way the LL can understand and call when needed.  So LLM will think on its own as to when I need which tool and then it will call that tool accordingly and provide inputs to it.  That tool will execute its work and report it back to LLM. LLM will tell you the work is done. And this is the flow.  Ok?  So I hope you roughly understood what the concept of tools is?  Tools are a way to provide LL hands and legs so that they can execute any kind of task. Now let's discuss a little more about tools, then you get two types of tools in Langchain.  One is built-in tools and the second is custom tools.  So Lashi's team identified that there are many tasks that everyone needs. Like searching Google or searching the Internet or searching Wikipedia or running command line tools.  So what they did was that they already created built-in tools for these popular use cases and kept them in the language chain.  Anyone can go and use these tools and you don't need to write any code yourself. Ok?  And the second is custom tools.  It could be that you're building a system for your company using LLM Plus tools and you come across a use case that's specific to your company.  So what you can do there is you can also create your own custom tools.  So going forward I will teach you how to work with both types of tools. I'll also show you the built-in tools in Langchain and how you can create your own tools and connect them to LLM. Ok?  Now a big question is how is this
-
-#### ⏱️ [00:10 ➔ 00:12]
-
-concept of tools related to the concept of agent?  Because after all we want to learn how to create agents. So let us read the definition of agent here once. Look what is written here? An AI agent is an LLM powered system that can autonomously think, decide and take actions using external tools and APIs to achieve a goal.  Ok?  So an agent is a system that has two capabilities. Firstly, he can think, reason and secondly, he can also take action.  Meaning, he can perform a task based on what he has thought about. Right?  So, in a nutshell, agents have two capabilities.  One is reasoning and decision making. Given a problem, they can think step by step about how to solve that problem and once they think, they can actually perform the action.  Now this reasoning and decision making part of the agent comes from LLM.  Right?  But this is the action taking part that I have to do this now.  You do this using power tools. So in a nutshell, the marriage of LLMs and tools is what we call an agent.  And that is why the concept of LLM is as important for building agents as the concept of tools. And that is why I told you at the beginning of the video that if you want to build agents using Lang chains and Lang graphs, then tools are a concept you must be well versed in.  Ok?  So I really hope you understood the discussion we had around tools in the last five minutes and now we will try to understand at a little how level how tools are made and how they are used. So let me first teach you how to work with the built in tools.  A By the way, we just discussed what built-in
-
-#### ⏱️ [00:12 ➔ 00:14]
-
-tools are.  A built-in tool is a tool that Langchen already provides for you.  It's prebuilt production ready and requires minimal and no setup.  Ok? So you don't have to write the function logic yourself.  You just have to import and use it.  The basic idea is that there were some popular use cases that the Longchen team felt everyone would need.  So they have already created those tools and put them in the library of Langchen. Now if you want to use those tools then you don't need to write your own code. Simply import them and use them.  Ok?  So here I have written the names of some popular built-in tools and given their one-line description.  Like one tool is Duck Duck Go Search.  Ok? With its help you can search the web.  DuckGo is a very famous search engine like Google.  So there's a tool already built into Langchen to search on DuckDuckGo.  Second is Wikipedia query run.  You can search for any topic on Wikipedia and get a summarized version of it with the help of this tool.  After that comes the Python Repel tool with the help of which you can run raw Python code.  Ok?  Suppose you want the factorial of a number. So if you directly ask for LLM, it is not necessary that the answer you get will be correct.  So instead what you can do is you can use this tool.  This tool will write a code behind the scenes for the factorial and give you the answer in return.  Ok?  Then there 's the Shell tool.  What can you do with its help ?  You can run shell commands or go to the console and run commands. So if you are creating an application where you want to interact with the files of the system on which the program is running, then you can use this tool there.  Apart from that, there is Request Gate tool with the help of which you can make http requests.  Gmail send message tool with the help of which you can send email using Gmail.  There's a separate tool for Slack.  There is also a Sequel Database Query Tool
-
-#### ⏱️ [00:14 ➔ 00:16]
-
-that lets you run Sequel queries. So you can see that tools for popular use cases have already been created in the Luck Chain.  So what I'll do is show you how to work with the tools.  It is very simple but what will happen after watching it once is that some understanding will develop further.  So what I will do is I will take you to Google Collab where I have already written this code.  You just need to import a few things and here's our first tool we're going to look at. We will use DuckGo Search.  So it might happen that someday you're building an agentic application where you need to search the web in, you know, real time. Right?  Suppose your user came.  He asked you, brother, tell me what is the most important news of today?  Right?  So LLM will not have this knowledge. Because LLM has a knowledge cut off date. So what can you do with the help of this particular tool ?  You can quickly go and search on Google Docs and fetch the search results from there and give them to LLM and then LLM will prepare an answer according to that result and give it to the user.  So what do you need to do first ?  You have to import these tools from Langchain Community.tools.  Doug Duck Go Search Run.  After that you will create an object of this class which we will call SearchTool.  Now the interesting thing is that I have n't told you yet that these tools are also runnables, which means they also have their own invoke function.  Ok?  So what are we doing ?  We are taking this tool and calling the invoke function and here you can give any term.  I just put on IPL news.  IPL is going on right now. You can put anything here. Whatever term you enter here, what will happen behind the scenes is that that query will go directly to a search engine.  The query will be searched there and the results that will come will be
-
-#### ⏱️ [00:16 ➔ 00:18]
-
-returned to you.  So behind the scenes, all this is happening here and then what I'm doing is printing the result. So if I run this code then see this Virat Kohli is all time reading run getter whatever it is and after this and further also it is telling you CSK IPL player qualification scenario with four points from eight matches, whatever you guys are following right now then you will know that this is your IPL related news.  Ok ?  According to this you can search top news in India today.  So here you will start seeing related news.  News about the very bad incident that happened recently in Pahalgam Kashmir is also being shown here.  Ok? So you can see how easy it is.  How easy Langche has made it for you to perform this search. You can quickly integrate this tool with LLM and show your users anything they need in real time. Ok?  So this is the first tool I wanted to show you and it's very popular.  Meaning you will see this in many use cases. Ok?  Then another tool I want to show you is the shell tool.  So a while ago I told you what is a shell tool?  With its help you can go to the command line and execute commands.  Whichever machine this code is running on.  So what did we do again? Imported the shell tool from the Langchain community.tools.  In exactly the same way we created the object again and this is also a Runnable. So I called invoke and here I passed this command who am i which will tell me what is my user name on the current machine. So if I run this code, it's running on Google Colab.  A Okay, there is some issue with the import.  So let me pause the video and try to figure it out. So guys this problem has been solved. So actually this is one
-
-#### ⏱️ [00:18 ➔ 00:20]
-
-more dependency you have to install.  Lung Chain Experimental Without this the shell tool is not working. So we installed that dependency and after that when I ran this code, look the result came.  A: This is the current computer on which our program is running.  Google will be Cobb's server. Our user name there is root. Ok?  You can also do ls here to list all the files in the current directory. So you can see a sample data folder showing which is true.  If you have worked with Google app then you will know that there you get a folder called sample data.  So here you can run many types of commands.  Whatever command line you have learned, you can run those commands here.  Although this tool is useful, it is also a bit risky. So you can use it sometime in the future.  Especially if in a production setup, be careful because if you are executing command line commands with command line arguments, some files etc. may also get deleted.  So just be careful about this. Ok?  So in a nutshell, I just wanted to show you how easy it is to use Langchain's built-in tools. So these are two very basic tools.  But if you want to see the complete list of what built-in tools are available to me, then you have to go to this link. Here you will find a list of all the built-in tools that exist within Langchain.  Like there are many tools related to search. Bing has its own, Brave has its own.   The Dug Dug Go one we just saw is different for Google as well.  And after that you have different tools to run your code.  There are different productivity related tools.  GitHub, Jira Office, SAC, Telo have separate tools for web browsing.   It's different for databases.  Finance and this is the complete list.  Ok?  Now the good thing is that you go to any of these tools and suppose
-
-#### ⏱️ [00:20 ➔ 00:22]
-
-we go to this, then here you will be given its complete description and also a working code.  What can you do ?  You can learn to operate that tool by going through it. Mostly things remain very simple.  In fact, in some places you are shown how to work with not only that tool. But at the same time, how to build an agent using it is also shown.  So there is very good documentation. I'd recommend you go through the tools that you find interesting. Ok?  So now you have some idea about how to use the built in tools in Langchen.  Now let's talk about what if you come across a use case for which no built-in tool exists.  In that case you will have to create your own tool and that is what we are going to learn next, how to make custom tools in Lang Chen.  Now that you understand about custom tools, you have to create a custom tool when you do n't already have a built-in tool for your use case. But I'd like to give you a general outline of when it might be that you need to create a custom tool.  So these are some of the most popular use cases where you have to create your own custom tools.  The first is when you want to call your own API in your application. Ok?  You have a very big application.  Suppose you have an application like Make My Trip where a lot of travel booking and hotel booking takes place. Now for this you want to create an agent.  Do you want to create an agent for your website where the user will not only come and talk to that agent but will also get the booking done etc. So now what will this agent need to work so that it can enter your database and perform bookings etc. So all this will be possible
-
-#### ⏱️ [00:22 ➔ 00:24]
-
-through API.  Right?  So somehow your agent will have to connect to your API. So to perform these tasks you have to create custom tools.  Ok?  The second use case is that you want to encapsulate some of your business logic. Right?  Which is again unique to your application.  Right?  So you will not get a built in tool for that. So you'll have to create a custom tool for that as well. And lastly, if you want your LLM to interact with your own database product or app.  So basically in a nutshell, if you already have an application and you want to create an agent for that application, then whatever tools are required for that agent to interact with the infrastructure of your existing application, you will have to create those tools yourself.  He cannot provide you with Langchen.  Ok ?  Later I will show you some use case where we will have an existing database and then we will create tools with the help of which our agent will be able to communicate with our database. Ok?  So let's do one thing. First, let me show you how to create your own tool in Langchain.  Ok? We will take a very simple example but that will make everything clear to you.  Ok?   There are also multiple ways to make your own tool for long chains.  What I am going to tell you now is the simplest and most straightforward method.  But going forward I will tell you other methods also.  Ok? So let's go back to the code. Now the first thing you need to do is you need to import the tool from Langchain core dot tool. Ok?  Now making the tool is a three step process. What do you have to do first?  You have to create a function for your tool.  So suppose we are taking a very simple use case, let us assume that our LLM does not know how to do multiplication.  Ok ?  Because he doesn't know mathematics.  So
-
-#### ⏱️ [00:24 ➔ 00:26]
-
-what are we doing?  We will build an external function which if you give two numbers, will invert them and return the product of those two numbers. Ok?  So what did we do first? Created this function in step one.  Just like the simple Python functions we've created in the past.  The only thing you will notice different here is that we have added a doc string to this function which tells us what this function does?  Now this doc string, however, does not necessarily have to be in this function.  But it is highly recommended that you provide this doc string here. Because with the help of this doc string, in future our LLM will understand what this function or this tool does. Ok?  So it is highly recommended that you add the doc string here. So step one is done.  We created this function. Step two is to add type hinting to your function.  So if you want a and b in the input, then you will tell what the type of a and b is going to be?  If your function returns an integer by inverting it, you would say that this function returns an integer. We call this type hinting. Ok?  Now this is also not a necessary step.  But it is also highly recommended that you write it inside the function.  This helps the LLM understand what kind of data he needs to input and what kind of data he can expect in return from this tool.  Ok? So in step one we created the function. In step two we added type hinting.  Now comes the final step where what do you do?   You put the @tool decorator on top of this function. Now what does the @Tool decorator do?  What makes this function a special function and what can this special function do?   Can communicate with LL.M.  Or should we say that LLM can communicate with this function.  So all the magic of Sara is hidden in this decorator.
-
-#### ⏱️ [00:26 ➔ 00:28]
-
-So going forward, if you want to create any tool of your own, then you have to do only three things.  The first is to write the logic of that function. Secondly, type hinting has to be added to it.  And the third is to put the @ tool decorator on his head. And that's it.  By doing this your tool will be ready. Now the tool is ready.  Now let me show you how you can use this tool. So you don't have to do anything. You will call the name of this function as the name of the tool, Multiply and Sinc, this is a tool.  It means it's also a runnable.  So it has the invoke function.  And what will you do inside the invoke function ?  Pass a dictionary.  Where you will tell what the value is for each of your inputs ?  So I'm saying pass this function to A three and pass to B five.  And I ran this code. And now I am printing the result. And You Can See 15.  Ok?  So I know nothing special happened.  We are simply using a function. Right?  But this function is not a normal function.  This is a tool.  Ok ?  And LL can interact with this tool. Which I'll show you in the next video when I teach you the concept of tool calling. But now we just created our first tool.  Ok?  Now how is this function special?  Let me show you that. This tool has some more capabilities. For example, if you take the name of this tool and print dot name, you will start seeing the name of this tool. Similarly, if you take this tool and print the dot description, you will get the description of this tool. And if you take this tool and print dot arguments, you will see all the arguments that are required for this tool to do its work.  So if I run this cell, look, this is the name of our tool.  This is generally the same as the name of your function. After that what is the description of the tool? Multiply two numbers.  This is exactly the
-
-#### ⏱️ [00:28 ➔ 00:30]
-
-doc string you provided. Ok?  And lastly here are your arguments.  So here it is being said that there are two arguments A and B. The first one is called capital A, the second one is called capital B and what is their type?   Integer. And where did this come from?  From this type of hunting that we provided.  Ok? So you will find these three attributes with any tool at any time. In fact, you will find these three attributes here also.  Look at this.  What do we have to do if I show you the Dug Dug Go one ? We just have to replace multiply with search tool and since this is also a tool, it also has a name, it also has a description and it also has a set of arguments, look the name of this tool is DuckDuckGoSearch, here is the description, a wrapper around DuckDuckGoSearch, useful when you need an answer to a question about current events, the input should be a search query and here is your arguments parameter. Ok?  I hope you are getting the idea till now that any tool you see in the look chain, associated with that tool you will get a name attribute, description attribute, arguments attribute.  Ok? One more thing I want to show you is when you send this tool to the LLM, what does the LLM see?  LLs do n't see this tool.  LL.M. sees this.  If you run this piece of code, you will see a complete large JSON schema.  If I can copy this and show it to you in a slightly better way.  Copy this, we're going to go into a JSON formatter and paste it here.  And processing it. Look at this.  So when we connect our tool and
-
-#### ⏱️ [00:30 ➔ 00:32]
-
-LLM, LLM actually sees this thing.  Rather then we send that function logic to LLM which is visible on your screen. This is the schema of your tool.  So whenever you connect a tool and an LLM, you don't send the tool to the LLM but instead you send the schema of the tool.  Ok?  So you can see in this that you must be understanding that it is very readable.  The description is written. Properties A and B are described.  Both things are required.  Title is Multiply and type is Object.  Ok?  So in the same way you can generate the schema of your built-in tools and see exactly what information is going to LLM about this tool.  Ok?  So I hope you get the basic idea of how you can create custom tools using Lang Chen. Now let me tell you some more ways with the help of which you can create custom tools.  Now guys you have seen one way to create a tool with the help of @Tool Decorator. Apart from this there are two more methods.  Actually there are more than two ways but there are two more ways which you will commonly see.  Ok?  One is to create your own structured tool and tool with the help of pydantic and the second is to create it with the help of base tool class.  So these are the three methods you will see the most. Apart from this, there are one or two more methods but they were used earlier.  Now it is not used that much.  So let's do one thing.  First, let's discuss the second method, how you can create a custom tool using structured tool classes and Pydantic.  So look here I have written a definition of structured tool.  So a structure tool in a language chain is a special type of tool where the input to the tool follows a structured schema typically defined
-
-#### ⏱️ [00:32 ➔ 00:34]
-
-using a pedantic model.  So the basic funda is that this second method is a slightly more strict method of making the tool.   Till now, we were creating tools using the @tool method, in the input that we were sending to our function, we were just telling it through type hinting that look brother, this will be an integer and the output of the function will also be an integer, but this is a very loose method. Ok?  What can you do?  You can enforce these constraints a little more strictly using something like a pedantic model, which we've covered in the past in this playlist.  So the basic principle is that you will create the function in the same way but you will strictly enforce its type, that is, the input type of the arguments, with the help of a pedantic model again, something which you will understand better by looking at the code. So here is the code.  So what do you need to do first ?  The structured tool class is to be imported from Lang Chen dot tool. Second you have to import the base model and fields from pydantic. What will you do now?  You will create the function as before.  Ok ?  The name of your function is multiply function and you have defined a and b and all this.  If you want, you can even not define the type hint here.  Because what have you done?  Here I have created a pydantic class which is obviously inheriting from the base model and here I have mentioned that this pydantic class has two attributes a and b both of which have integer inputs.  And then I have also added extra description about these two fields.  So ah both required are true.  Meaning both should be there.  And I have given description of both.  Here, instead of first, we will put second.  Ok?  So this is my pedantic model.  This is
-
-#### ⏱️ [00:34 ➔ 00:36]
-
-my function.  Now the main work starts here. what shall we do now?  We'll call the structured tool dot from function and here we'll specify things.  First of all we will tell what is our function with the help of which we have to create the tool.  After that we will give a name to that function.  We will also give it a description here.  Ok? And this is the most important step. In the argument schema, we will provide the Multiply input which is our pydantic class. Ok?  So here you can see that you are not doing all the work in just one function. You are doing all the work here.  Ok?  This is where you are telling which function to use to create the tool.  You are giving a name to that function and that tool.  You're giving that tool a description and enforcing your argument schema separately using a pydantic model.  So this is a slightly more mature approach.  If you want to create production ready agents then this method will help you a lot.  Ok?  But again, in most cases, the decorator method is used and it will do the job for you.  Ok? So let's do one thing.  We make this also once and score runs.  And here everything will work exactly the same way. You can invoke this also. And around this you will also get description, name etc.  Ok?  Here also you may be seeing some additional things. Required True.  Ok? And its own description, all of this is coming from our pydantic model.  Ok?  So I hope you understood.  There is not much difference.  The only difference is that you are building your tool using this class and providing a separate input schema argument schema that enforces the constraints in a slightly stricter way.  That's it.  That's the only difference.  Now let's talk about the third method.  So the third way is that you create
-
-#### ⏱️ [00:36 ➔ 00:38]
-
-your custom tool with the help of the base tool class. Now to understand this, first you should know what is base tool class ?  So look here it is written BaseTool is the abstract base class for all tools Tools in the chain It defines the core structure and interface that any tool must follow Wether it's a simple one liner and a fully customized function All other tool types like @Tool and structTool are built on top of BaseTool ok?  So the basic funda is that an abstract class is created in the Lang chain whose name is BaseTool.  Now whenever you create any tool, it may mean that you create it yourself or it is a built-in tool already made.  All these tools are forced to inherit the base tool class.  Because the base tool class itself describes how a tool will behave in the language chain.  So, the tools that you created with the help of @Tool Decorator or the tools that I just showed you by creating them with the help of Structure Tool, all these tools by default inherit the base tool class. Ok?  So what will we do now? Rather than using these methods, we will create our own tool by directly inheriting the base Tool class. Ok?  So let me show you the code. So for this, first of all you will have to import the base tool from Langche dot tool and the type from typing.  Ok?  Again I told you about typing.  I remember that in some video or the other I have also told you about typing.  A So the first thing you need to do is you need to create your own class.  Whose name is Multiply Tool from Let's.  And the special thing is that this multiply tool class is inheriting the base tool class.  Meaning our class is a child of the base Tool class.  Ok
-
-#### ⏱️ [00:38 ➔ 00:40]
-
-?  Now what can you do here?  You can define your own attributes. You can define your own functions. So the first function is name.  Ok? Ah is not a function.  I am sorry.   The attribute is name where you specify the name of your tool. The second is the description where you describe what your tool does. After that you can send your argument schema here.  So what is the argument schema we created?  We define a separate argument schema using pydantic just like we did in the one above.  Look, this is exactly the same thing.  So the schema that we created here, we have defined exactly the same schema here also that our tool will get two things as input.  Both A and B will be integers and their description has also been added.  So what am I doing here now? In my MultiplyTool class, I'm saying that my argument schema is the MultiplyInput that I've defined above.  And the type of this multiplier input identic schema is the base model.  Basically this is a pedantic schema.  Ok?  Now here you define your most important run method. @Under root you define a run method.  Ah, this is exactly what its name should be.  Ok ?  You cannot write anything else here.  So here you have told A and B and on turning around you will get A and B.  Ok?  And that's it guys. This class that you created is now directly inheriting the base tool class.  And since this class also becomes a tool in the long chain.  Ok?  Now you create its object.  As we have created the object here and once you have the object, you will pass the input by calling dot invoke here and you will get the answer and like before, here also you can print the name description and arguments in the same way.
-
-#### ⏱️ [00:40 ➔ 00:42]
-
-Ok?  This method gives you many benefits. You get to do customizations at a much deeper level. You can do it here.  In fact, you can also create an async version of your tool.  Ok ?  You don't get that feature in the @Tool decorator.  It is not available even in the structure tool. But here you can create an async version of your tool.  Ok?  So if you are building an application where you need to handle concurrency, you will use this particular method.  But again in my experience, for experimenting at the basic level, @Tool Decorator is sufficient and in 80-90% of the scenarios, you will get your work done by creating a tool with the help of the first method.  There will be certain scenarios where you are working on a production ready application or a production level application, then you may need the other two methods.  That is why I have told you both of these. Again you can explore things by going to the Luckchain documentation.  So in this video we have read about the tools. We have read about built-in tools.  I also learned to make my own tools. And see three different ways to make your own tools.  Now there's one last topic I want to cover in this video and that's toolkits. Ok?  So what is the concept of toolkit? That if you are creating multiple tools for your application and those tools are related to each other, then you can club those tools and form a toolkit. Ok?  For example, suppose you are creating multiple tools related to Google Drive.  One is the file uploading tool on Google Drive. One is a tool to search files on Google Drive. One is a tool to read any file on Google Drive.  Now all these tools are related to Google Drive. So what you can do is club all these together and form a toolkit called Google
-
-#### ⏱️ [00:42 ➔ 00:44]
-
-Drive Toolkit.  Ok?  So this concept exists in Langchen.  You will also find built-in toolkits in Luckchain.  And if you want, you can even create your own custom toolkits.  Look here.   Let us read the definition once.  A toolkit is simply a collection of related tools that serve a common purpose packaged together for convenience and reusability.  So the biggest benefit of creating toolkits is reusability.  You have prepared the toolkit.  You can also use it in one of your applications.  You can use it in any other application also. So that is the main funda behind creating toolkits.  Ok? So let me show you how to build a custom toolkit with the help of Lang Chen. What do you need to do first?  You will need to create two or more tools that are related.  Like what are we doing?  We are creating two tools here.  One is the tool to add, one is the tool to multiply.  And both these tools are related.  Because both are doing arithmetic operations.  Ok? And we are using the @tool decorator method to create these tools. You can also use another method.  Now the main work starts here.  You create a class for whatever toolkit you want to create. So we created the class and we named the class whatever we want the toolkit to be called.  So the name of our toolkit is Math Toolkit.  Now what do you have to do inside it?  One is to define a method called Get Tools Bol.  Ok ?  And what will you simply do here?  You will return the names of the tools you want to be part of this toolkit.  So I made add and multiply part of it. Ok?  What can you do now?  You can easily create an object of your toolkit and as soon as you do toolkit.gettools, you will get all the tools
-
-#### ⏱️ [00:44 ➔ 00:45]
-
-that exist inside your toolkit. What can you do now ?  You can access all these tools simply by running a loop.  You can also run them.  You can check their name, description, args everything.  Ok?  So this is the main benefit of using toolkits that you are able to access everything together and at the same time there is the point of view of reusability. Ok?  So, it was a very small concept. But I just felt I should cover it. So ya uh that's it for the video, guys.  I know, you might be feeling a bit incomplete that yes friend, we have learnt to make tools but we have not learnt how to connect these tools with LLM.  The reason for this is that we will cover this topic in the next video when I teach you tool calling. So the main theme of today's video was to give you complete knowledge about tools. I really hope I could give that. Everything around the tools is clear to you. Now the next video, in fact the next one and the video after that, both are very interesting. Because in future videos we will use these tools with LLMS.  Ok? So if you liked this video please like it.  If you have not subscribed to this channel , please do subscribe.  See you in the next video.  Bye.
-
-</details>
+- [ ] **Architecture Verification:** Ensure your design addresses latency, decoupled interfaces, and strict data validation contracts.
+- [ ] **Deterministic Testing:** Run unit tests and golden dataset evaluations before shipping changes to staging or production.
+- [ ] **Security & Observability:** Enforce input/output guardrails, scrub sensitive credentials/PII, and capture distributed traces.
+- [ ] **Scalability & Sizing:** Calibrate model parameters, context limits, and compute instance requirements against projected request concurrency.

@@ -1,181 +1,141 @@
 ---
 id: 01-introduction-to-undertsanding-ragretriev
 title: "Introduction To Undertsanding RAG(Retrieval-Augmented Generation)"
-sidebar_label: "01. Introduction To Undertsanding RAG(Retrieval-A"
+sidebar_label: "01. Introduction To Undertsanding RAG(R..."
 sidebar_position: 1
-description: "Study guide and architectural notes for Introduction To Undertsanding RAG(Retrieval-Augmented Generation) (Complete RAG Playlist (Krish Naik))."
+description: "Introduction To Undertsanding RAG(Retrieval-Augmented Generation) - Architectural deep dive, implementation patterns, and enterprise best practices."
 tags:
+  - rag
+  - vector-database
+  - retrieval
   - krish-naik
-  - 03-advanced-rag-memory
-  - ai-engineering
 ---
 
 # 📹 Introduction To Undertsanding RAG(Retrieval-Augmented Generation)
 
 <div className="video-card" style={{border: '1px solid #30363d', borderRadius: '8px', padding: '16px', marginBottom: '24px', background: 'rgba(56, 139, 253, 0.05)'}}>
   <div style={{display: 'flex', gap: '16px', flexWrap: 'wrap'}}>
-    <div><strong>Instructor:</strong> Krish Naik (Krish Naik)</div>
-    <div><strong>Duration:</strong> 20m 40s</div>
-    <div><strong>Playlist:</strong> Complete RAG Playlist (Krish Naik)</div>
+    <div><strong>Instructor:</strong> Krish Naik</div>
+    <div><strong>Duration:</strong> 1240</div>
+    <div><strong>Course:</strong> Module 3: Advanced RAG & Memory</div>
     <div><strong>Watch Link:</strong> <a href="https://www.youtube.com/watch?v=fZM3oX4xEyg" target="_blank" rel="noopener noreferrer">YouTube Lecture ↗</a></div>
   </div>
 </div>
 
-## 📌 Executive Summary & Learning Objectives
+## 📌 Executive Summary
 
-This lecture covers **Introduction To Undertsanding RAG(Retrieval-Augmented Generation)**, focusing on production implementations, edge cases, and industry standards:
-- Core intuition, architecture, and underlying mechanisms.
-- Key differences between theoretical research implementations and scalable enterprise patterns.
-- Concrete Python walkthroughs, error recovery, and performance optimization.
+Retrieval-Augmented Generation (RAG) bridges the gap between static foundation models and dynamic enterprise data. By retrieving relevant document contexts from vector databases and injecting them into the prompt, RAG suppresses hallucinations and eliminates the need for expensive model retraining.
+
+This lesson explores the naive RAG architecture, retrieval-augmented prompt engineering, managing token context budgets, and source citation grounding.
 
 ---
 
-## 🏗️ Architecture & Conceptual Workflow
+## 🏗️ System Architecture & Execution Flow
 
 ```mermaid
-flowchart TD
-    Q["User Question"] --> R["Retriever (Vector DB / Hybrid Search)"]
-    R -->|Context Chunks| P["Prompt Template\n('Answer based strictly on context')"]
-    Q --> P
-    P --> LLM["Foundation LLM\n(Local Ollama / Cloud API)"]
-    LLM --> G["Grounded Answer (With Citations)"]
+flowchart LR
+    User["User Query"] --> Ret["Vector Retriever
+(Cosine Similarity / MMR)"]
+    Ret --> Context["Retrieved Context Chunks"]
+    Context --> Prompt["Grounded Prompt
+'Answer strictly based on context'"]
+    User --> Prompt
+    Prompt --> LLM["Chat Model
+(Llama 3 / GPT-4o)"]
+    LLM --> Stream["Streaming Grounded Answer"]
 ```
 
 ---
 
 ## 📖 Core Concepts & Technical Deep Dive
 
-### 1. Architectural Foundations
-In modern production AI engineering, **Introduction To Undertsanding RAG(Retrieval-Augmented Generation)** is essential for ensuring reliability, low latency, and deterministic outcomes. As AI systems evolve from naive prompt-in / completion-out scripts into distributed systems, engineers must handle:
-- **State management & consistency:** Ensuring intermediate states and tool invocations are tracked.
-- **Error boundaries & recovery:** Graceful degradation when external LLMs or vector stores encounter rate limits or network partitions.
-- **Resource utilization & cost efficiency:** Caching common queries and reducing unnecessary foundation model token expenditure.
+### 1. The Architectural Need for RAG
+Foundation models suffer from two primary limitations:
+- **Knowledge Cutoff:** Models cannot answer questions about internal company databases or recent news.
+- **Parametric Hallucinations:** Models generate plausible but factually incorrect assertions when lacking confidence.
+RAG solves both by converting generation from an open-book memorization task into a closed-book comprehension task.
 
-### 2. Operational Considerations
-- **Latency Optimization:** Pre-computing embeddings, utilizing asynchronous non-blocking event loops, and streaming tokens via Server-Sent Events (SSE).
-- **Security & Sandboxing:** Validating inputs before ingestion, sanitizing LLM outputs, and isolating tool execution environments.
+### 2. The RAG Ingestion vs Query Lifecycle
+- **Ingestion Pipeline:** Load raw documents -> Split into overlapping chunks -> Generate vector embeddings -> Store in vector index.
+- **Query Pipeline:** User submits question -> Convert query to embedding vector -> Top-K vector retrieval -> Synthesize grounded prompt -> Stream model completion.
+
+### 3. The Context Window & 'Lost-in-the-Middle'
+Injecting dozens of retrieved documents causes attention dilution. Models pay highest attention to the beginning and end of the context window, frequently ignoring facts positioned in the middle. Keeping top-K between 3 and 5 optimizes recall and token expenditure.
 
 ---
 
-## 💻 Production Implementation Walkthrough
+## 💻 Production Implementation
 
 ```python
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.chat_models import ChatOllama
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
 
-# RAG Prompt with strict grounding
-rag_template = """Answer the question based strictly on the provided context:
+# 1. Setup local vector store & retriever
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+vectorstore = Chroma(collection_name="kb", embedding_function=embeddings)
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+
+# 2. Strict grounding prompt template
+rag_template = """You are an authoritative enterprise knowledge assistant.
+Answer the question using STRICTLY the provided context. If the answer cannot be deduced from the context, state: 'Insufficient context available.'
+
 Context:
 {context}
 
-Question: {question}
+Question:
+{question}
+
 Answer:"""
 
 prompt = ChatPromptTemplate.from_template(rag_template)
-llm = ChatOllama(model="llama3", temperature=0.1)
+llm = ChatOllama(model="llama3:8b", temperature=0.0)
 
-# Format documents helper
 def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+    return "\n\n".join(f"[Doc {i+1}]: {doc.page_content}" for i, doc in enumerate(docs))
 
-# Complete RAG Chain
+# 3. Declarative RAG Chain
 rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | prompt
     | llm
     | StrOutputParser()
 )
+
+print("RAG Chain compiled and ready for execution.")
 ```
 
 ---
 
-## 💡 Production Best Practices & Tips
+## ⚙️ Production Gotchas & Best Practices
 
-:::tip Production Deployment Guideline
-When deploying Introduction To Undertsanding RAG(Retrieval-Augmented Generation) in enterprise environments, always configure automated retries with exponential backoff and telemetry tracing (such as OpenTelemetry or LangSmith).
+:::tip Refusal Prompting
+Explicitly instruct the model: "If the context does not contain the answer, reply with 'Insufficient information'". Without this instruction, models fallback to internal parametric assumptions and hallucinate.
 :::
 
-:::warning Common Failure Modes
-Watch out for state contamination across concurrent requests. Ensure each session or user interaction uses an isolated thread ID or execution context.
+:::warning Context Pollution
+Do not feed raw HTML tags, navigation bars, or repeated headers into the prompt. Clean documents during ingestion to maximize effective context density.
 :::
 
 ---
 
-## 🎯 Key Takeaways & Quick Reference
+## 📊 Architectural Reference & Comparison
 
-| Dimension | Production Standard | Pitfall to Avoid |
+| Metric | Naive RAG | Fine-Tuning |
 | :--- | :--- | :--- |
-| **Execution** | Async / Non-blocking with timeouts | Synchronous blocking calls in event loops |
-| **Data Validation** | Strict Pydantic v2 schemas | Untyped dictionary access |
-| **Monitoring** | Distributed tracing & latency percentiles | Relying only on standard console logs |
-
-## ⏱️ Lecture Timeline & Key Topics
-
-| Timestamp | Key Topic / Concept Discussed |
-| :--- | :--- |
-| **00:00:00** | Hello all, my name is Krishna and... |
-| **00:05:25** | not want to look like a fool. Okay, that... |
-| **00:10:58** | application becomes very easy. Data... |
-| **00:16:02** | use perfectly Perplexity.... |
-| **00:20:38** | next video. Thank you. Take care.... |
-
-
+| **Knowledge Dynamic Updates** | Immediate (re-index docs) | Requires expensive re-training |
+| **Hallucination Control** | High (grounded citations) | Low (can still hallucinate weights) |
+| **Setup Cost** | Low (open-source vector DB) | High (GPU compute clusters) |
+| **Auditability** | High (direct document links) | Low (opaque weight parameters) |
 
 ---
 
----
+## 📚 Key Takeaways & Enterprise Checklist
 
-## 📜 Complete Lecture Transcript (English)
-
-> **Language:** English | **Source:** `01 - Introduction To Undertsanding RAG(Retrieval-Augmented Generation).en-orig.srt` | **Total Segments:** 11 | **Word Count:** ~3,354 words
-
-<details>
-<summary><b>Click to expand full chronological transcript (11 timestamped intervals)</b></summary>
-
-#### ⏱️ [00:00 ➔ 00:02]
-
-Hello all, my name is Krishna and welcome to my YouTube channel. So guys, I am super excited to start this new series on one of the most important technique which is right now being used in genative AI and agentic AI field that is nothing but rag. If you don't know the full form of rag, it is called as retrieval augmented generation. In this specific video, we will try to understand what exactly is rag. uh what are the disadvantages of just using the LLM model and how we are overcoming those disadvantages with the help of rag when should we use rag and what are the important pipelines that we should take a note while developing a rag application okay so all this topics we will be discussing and as we go ahead we are going to implement each and every important pipelines with the help of Jupyter notebook and I will also show you with the help of modular coding Right. So both the ways we will try to implement it. Now why I'm stressing on this specific series because nowadays every companies are looking for professionals who are who knows how to build rag applications because if you see various AI engineering reports there many of the companies around 60 to 70 projects percentage of the projects are specifically on rag application. So let me quickly go ahead and share my screen and start discussing about rag. This is just the introduction video of rag. Uh and as we go ahead we'll be implementing more amazing examples. So let me quickly go ahead and show you. So this is a simple definition that uh I've put up over here and uh in this definition first of all we'll try to understand rag. Okay. So first of all let's go through the definition and then I will give you a brief idea what exactly rag is all about you know. So here you can clearly see that rag is the process of optimizing the output of a large language model. Okay. So it references
-
-#### ⏱️ [00:02 ➔ 00:04]
-
-an authorative knowledge base outside of it training data set source before get generating a response. LLMs are trained on vast volume of data as we all know and use billions of parameters to generally original output for task like question answering, translating and completing sentences. Rag extends the already powerful capabilities of LLM to specific domain or an organizational internal knowledge base all without the need to retrain the model. Okay. It is cost- effective approach to improve LLM output. So it's relevant, accurate and useful in various context. So this is just a basic definition. You can refer to this particular definition. So guys, now let's go ahead and understand about rag. So let's consider that I have a generative AI application. And as you all know in a generative AI application, usually let's say that I have an LLM. So this is my LLM. Now usually whenever we have a LLM what happens is that let's consider that I have a user a user is asking a query. So this is a my query from the user and before it is sent to the LLM we do add a prompt right we do add a prompt and this prompt is just like an instruction to the LLM like how the LLM should work okay and then based on this we actually get an output now this is a simple generative AI application wherein the LLM is used to generate the content Okay, generate the content. So obviously by using this specific technique we give a query and this LLM you know that it has been trained with billions of data okay different kind of data that is available in the internet and based on this it will be able to generate the output. One of the disadvantage of this
-
-#### ⏱️ [00:04 ➔ 00:06]
-
-let me talk about the disadvantage of this particular approach. As you know that every LLM that is trained you know it will be trained for a specific set of data. So let's say right now it is 31st August. Okay 31st August. Let's say this is my LLM model and this is basically GPT5 which is the recent model from OpenAI. Now as you know that when this model was launched this model may be trained by may be trained with data till 1st August. Okay. So this LLM will not have any idea what has basically happened in the current world between 1st to 31st August. Right? And let's say if I go ahead and ask a specific question to the LLM which is between this specific dates for any kind of events the LLM will start hallucinating. So one of the major disadvantages of only using the LLM is that it will hallucinate. Okay. When we say hallucinating what does this basically mean? It means that even though it does not have the knowledge what has happened between 1st August to 31st August any events even though we ask any question the LLM will try to generate it own answer because it does not want to look like a fool. Okay, that is the best example. It does not want to look like a fool. So it will try to generate some answers and it will make sure that it will it'll show you answer that you may also have to believe it. that is how it will be written you know in in terms of the output that we get so usually this condition is basically called as hallucinating okay so this is one of the major disadvantage the second disadvantage that you have so let's say that I'm using this LLM and you know this LLM has been trained with huge amount of data now what happens is
-
-#### ⏱️ [00:06 ➔ 00:08]
-
-that I'm running a startup let's say now in my startup I'm solving a specific use case and I have some data which again I need to use this particular data along with my LLM. Okay. So let's say that I have some other data like you know um policies policies of my company I have HR policies of my company I have finance policies you know and this policies all will not be available in the it will not be available publicly because it is my startup so these all data has been protected now I also want to use this specific data and probably create a chatbot okay now how do I do this now one way is that many people will say hey kish we can take this particular data and we can fine-tune the model right we can simply fine-tune the model yes this is a very good solution but understand fine-tuning a model is a very expensive process very tedious process because this LLM whichever LLM we are using it has billions of parameter and tweaking this billions of parameter usually takes a lot of time Right? So obviously this is a solution but this is a very expensive solution. Okay. Now do we have any other way any other way and remember these all policies and these all data will also keep on getting updated as we run the startup. Right? So every time we cannot just go ahead and fine-tune it like every day we not fine-tune it. Right? So we should try to find out a solution like how do we prevent this? So this can again be prevented with the help of rag. Right? Now how it will be prevented with the help of rag I will talk about it. Okay. So here instead of fine-tuning I'm saying that hey I will go ahead and implement the rag. Now you'll understand
-
-#### ⏱️ [00:08 ➔ 00:10]
-
-only when we understand the pipeline of the rag which I will discuss in this specific video. Okay. Now these are the major two disadvantages that you see right over here and yes there are some more disadvantages which we'll just deep dive more as we go ahead. Okay now what happens in uh if we use rag and how we are preventing it. See rag is nothing but it is it is saying that is a process of optimizing the output of a large language model. So it references an authorative knowledge base outside of his training data. Now how do we solve this hallucinating and this problem that we have okay so let me just go ahead and draw the diagram again okay so here is my llm okay and here is my query so let's say that uh I am coming up with an user query so let's consider it over here okay and here I'm drawing a user I'm user okay and this user will first of all give a query. Okay. Now what happens is that there will be two important pipelines that will be created. As I said over here we are trying to optimize the output of a large language model. So it references an authorative knowledge base outside of it training data source. So as you all know this is my LLM right? This LLM is already trained with huge amount of data. Now along with this I will be having an external database and this database we basically say it as vector database. Okay external vector database. Now you you know that this LLM is already trained with some amount of data and any additional data let's say my startup data my policies HR finance whatever data is there we will try to create a data injection pipeline
-
-#### ⏱️ [00:10 ➔ 00:12]
-
-over here data injection pipeline over here now what will be this data injection pipeline so let's say I have my data from this data we will do some kind of parsing and from this parsing we will do embeddings embeddings and then we finally store it into the vector store. Okay. Now whenever we talk about this specific data this data can be in any format. It can be in PDF format. It can be in HTML format. It can be in Excel format. It can be even in SQL database format or unstructured format any format. So what we do initially we take this data and we do data parsing. Now here data parsing is a very important step. I think if you crack this step then developing a rag application becomes very easy. Data parsing is all about how do you read the unstructured data or the structured data that is present inside this and how do you chunk this data right how do you chunk how do you divide this specific data into chunks chunking is very important because you need to save this data inside some kind of vector store this is nothing but vector store or vector DB okay now vector store and vector DB is nothing but it will actually help you to save vectors inside this. Okay. So once you do the chunking after doing the chunking you pass it to the embedding models. Now here in the embedding models you basically convert text to vectors. Okay. Vectors is just like a numerical representation for text so that you will be able to apply algorithms like similarity search cosine similarity techniques that are already available
-
-#### ⏱️ [00:12 ➔ 00:14]
-
-right wherein similar kind of results based on a specific query can be retrieved from this particular databases. Okay. So here whenever I talk about vector DB this is my vector DB or vector store here we are storing embeddings. Okay. And this embeddings will get applied to every chunks. Embeddings is nothing but we basically use we convert text into vectors. Here we can use different different embeddings like Google Germany embedding models. We can use open AI embedding models. We can use hugging phase embedding models and each and every embedding models exist with different different cost and there are also open-source embedding models which will actually help you to convert the text into vectors. Now this is one specific pipeline which we call it as data injection pipeline. At the end of the data injection pipeline you are able to store the text into vectors inside your vector DB. Now how rag is different from the previous one. Right? So initially you had this data injection pipeline where you are converting all your data into vectors. Right? And this data is specifically for this particular startup. And now I have created a knowledge base. So this is my knowledge base. External knowledge base or internal knowledge base whatever knowledge base I have and this knowledge base does not exist with this LLM. Right? Yes, some amount of information may be available but not the entire part. Now see the definition. It is a process of optimizing the output of a large language so that it references an authorative knowledge base outside of this training data. Now what will happen when user gives a query? Now this query instead of directly going to the LLM will go to this vector database right and before going here also we need to go ahead and apply embedding right because this query will be converted into vectors right why we need to convert
-
-#### ⏱️ [00:14 ➔ 00:16]
-
-into vectors so that when we are hitting this query to the vector DB this similarity search is basically applied and based on this we get some kind of context we get some information from the vector DB and now whatever query I'm asking okay if I ask hey what is the leaf policy of my company right now what will happen first of all it'll go to the vector store it will gather all the related information that is available over here and that information when it is sending it to the llm it is called as context Now we use this context along with we go ahead and write a specific prompt. Now this prompt is an instruction to the LLM and it says that you can use this context to answer the question and finally you get a output. This is the entire pipeline. This pipeline is basically called as retrieval pipeline. Retrieval pipeline. And this is a very good example of a traditional rag. Now you may be thinking kish what about other types of rag. Don't worry thumb don't worry I will explain it completely from basic to advanc with implementation each and everything because later on we'll be discussing about agentic rags. We'll be discussing how agentic rags actually work each and everything. But I hope you got an idea with respect to this. Now here you will even not be seeing this particular problem like you'll not completely remove hallucination but some amount of hallucination if any queries that is asked related to the data that is present in the vector DB I will definitely get some kind of context and my LLM will give me the output as let's say that if that data is not present over here then LLM can hallucinate right but here we are doing this see one best
-
-#### ⏱️ [00:16 ➔ 00:18]
-
-example that you can do is that you can use perfectly Perplexity. Perplexity is nothing but it is based on rag. It is completely developed based on rag applications. Okay. Rag it is it is a kind of a rag application. In perplexity you have connected to various retrievers. You are connected to tools. You are connected to web search right and then it is summarizing the output and giving by the LLM. Right? and it also uses various LLMs itself. I'm also planning to mostly start a startup soon enough within a couple of weeks I guess and the kind of application that I'm developing is a rag application only and it solves a very good problem for a developer. Okay. So that is the reason I'm not being able to upload a lot of videos because I'm pretty much involved in those startups and working and developing a product that India can definitely remember. Okay. And this is how you know this is this is this is how things are and you can basically see how good uh you know the pipeline actually works and this is basically a traditional rack. Now you may be thinking what all things we'll be discussing. Okay fine we have discussed about a traditional rack in the future classes what coding we'll be doing. Okay so let's go ahead and talk about it. As I said two important pipelines we'll go ahead and create one is a data injection pipeline and one is a retrieval pipeline. Okay. Now in the data injection pipeline you'll be see seeing that we will be performing data injection. Along with the data injection we will go ahead and do data parsing. Then we'll perform embeddings. Then uh we will store everything into the vector store. Then we will create a retriever for this and whenever a user ask any queries it will be able to give the context to the LLM and then finally we will be generating the output. So here this is retrieval this is auggmentation
-
-#### ⏱️ [00:18 ➔ 00:20]
-
-right this is augumentation over here augmentation basically means what you're giving a context to the LLM along with the prompt to generate the output right so this is basically called as augmentation and finally you're generating the output right which is nothing but generation so here you are basically generating now in the next session how we are going to implement it first of all I will show you how to perform these two steps in a very efficient way. Okay, sorry not these two steps. I will show you how we can perform these all steps, right? Data injection, data parsing and embedding. Here we are going to consider different different files like PDF, HTML. Okay. Um PDF, HTML, you can consider Excel, you can consider SQL database, you can consider any kind of files. Then we'll do document parsing and we will try to convert this into document. So document is an amazing data structure which you can basically use it and you can even parse this do the chunking and store it in the vector embeddings sorry vector store. Then we'll perform embeddings. Here we will use both open source and we are going to use paid embeddings for the same. Okay. And then finally we go to the vector store. Then based on a user query, how do we go ahead and apply the same embeddings we are going to see that okay and then finally we'll be developing this. So mostly I really want I'm I'm focusing more on making bigger videos so that you don't just follow a playlist. Okay. I want to basically cover a lot of stuff in one video so that uh you should also be able to efficiently cover it instead of covering 50 different videos. Right now when we are doing data injection and data parsing right there are various techniques see we are going to see about optimization we are going to see about various chunking strategies context engineering these all kind of topics will be coming up when we talk about data parsing you know u what is semantic chunker you know
-
-#### ⏱️ [00:20 ➔ 00:20]
-
-how do we go ahead and do the chunking in those strategies and all everything we'll try to discuss as we go ahead but I hope you got a very super cool idea about what exactly is rag um Yeah, this was it from my side. Uh please make sure to like the video, share with all your friends and uh soon within couple of days we'll come up with the next video wherein we will be starting the coding tutorial and we'll start building this data injection pipeline and I will try to build it in the form of a project uh that it'll be looking good for you so that you'll also be able to completely implement things right. So yes, this was it from my side. I'll see you in the next video. Thank you. Take care.
-
-</details>
+- [ ] **Architecture Verification:** Ensure your design addresses latency, decoupled interfaces, and strict data validation contracts.
+- [ ] **Deterministic Testing:** Run unit tests and golden dataset evaluations before shipping changes to staging or production.
+- [ ] **Security & Observability:** Enforce input/output guardrails, scrub sensitive credentials/PII, and capture distributed traces.
+- [ ] **Scalability & Sizing:** Calibrate model parameters, context limits, and compute instance requirements against projected request concurrency.
