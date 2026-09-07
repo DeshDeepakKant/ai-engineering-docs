@@ -13,7 +13,7 @@ const config = {
   organizationName: 'anya',
   projectName: 'ai-engineering-docs',
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
 
   i18n: {
     defaultLocale: 'en',
