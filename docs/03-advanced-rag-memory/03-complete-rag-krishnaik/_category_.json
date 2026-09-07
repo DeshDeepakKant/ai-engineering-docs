@@ -1,0 +1,8 @@
+{
+  "label": "Complete RAG Playlist (Krish Naik)",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "MultiModal RAG, Agentic RAG with LangGraph, MongoDB vector search, and chatbot evaluation."
+  }
+}

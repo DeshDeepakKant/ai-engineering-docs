@@ -1,0 +1,8 @@
+{
+  "label": "Generative AI using LangChain (CampusX)",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Modern LangChain ecosystem: LCEL, prompt templates, output parsers, vector stores, and tool calling."
+  }
+}

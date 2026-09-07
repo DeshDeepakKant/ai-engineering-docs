@@ -1,0 +1,8 @@
+{
+  "label": "Memory in LLMs (CampusX)",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Mechanisms of LLM memory: Short-term stateful memory vs Long-term episodic and semantic memory."
+  }
+}

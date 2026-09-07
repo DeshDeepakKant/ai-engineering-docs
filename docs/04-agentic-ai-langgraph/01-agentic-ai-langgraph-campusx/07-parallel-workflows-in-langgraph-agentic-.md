@@ -1,0 +1,232 @@
+---
+id: 07-parallel-workflows-in-langgraph-agentic-
+title: "Parallel Workflows in LangGraph ｜ Agentic AI using LangGraph"
+sidebar_label: "07. Parallel Workflows in LangGraph ｜ Agentic AI "
+sidebar_position: 7
+description: "Study guide and architectural notes for Parallel Workflows in LangGraph ｜ Agentic AI using LangGraph (Agentic AI with LangGraph (CampusX))."
+tags:
+  - campusx
+  - 04-agentic-ai-langgraph
+  - ai-engineering
+---
+
+# 📹 Parallel Workflows in LangGraph ｜ Agentic AI using LangGraph
+
+<div className="video-card" style={{border: '1px solid #30363d', borderRadius: '8px', padding: '16px', marginBottom: '24px', background: 'rgba(56, 139, 253, 0.05)'}}>
+  <div style={{display: 'flex', gap: '16px', flexWrap: 'wrap'}}>
+    <div><strong>Instructor:</strong> Nitish Singh (CampusX)</div>
+    <div><strong>Duration:</strong> 59m 29s</div>
+    <div><strong>Playlist:</strong> Agentic AI with LangGraph (CampusX)</div>
+    <div><strong>Watch Link:</strong> <a href="https://www.youtube.com/watch?v=O6ryuSpqdOw" target="_blank" rel="noopener noreferrer">YouTube Lecture ↗</a></div>
+  </div>
+</div>
+
+## 📌 Executive Summary & Learning Objectives
+
+This lecture covers **Parallel Workflows in LangGraph ｜ Agentic AI using LangGraph**, focusing on production implementations, edge cases, and industry standards:
+- Core intuition, architecture, and underlying mechanisms.
+- Key differences between theoretical research implementations and scalable enterprise patterns.
+- Concrete Python walkthroughs, error recovery, and performance optimization.
+
+---
+
+## 🏗️ Architecture & Conceptual Workflow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Agent: User Prompt
+    Agent --> ToolNode: Tool Call Required
+    ToolNode --> Agent: Tool Execution Result
+    Agent --> Finished: Final Answer Generated
+    Finished --> [*]
+```
+
+---
+
+## 📖 Core Concepts & Technical Deep Dive
+
+### 1. Architectural Foundations
+In modern production AI engineering, **Parallel Workflows in LangGraph ｜ Agentic AI using LangGraph** is essential for ensuring reliability, low latency, and deterministic outcomes. As AI systems evolve from naive prompt-in / completion-out scripts into distributed systems, engineers must handle:
+- **State management & consistency:** Ensuring intermediate states and tool invocations are tracked.
+- **Error boundaries & recovery:** Graceful degradation when external LLMs or vector stores encounter rate limits or network partitions.
+- **Resource utilization & cost efficiency:** Caching common queries and reducing unnecessary foundation model token expenditure.
+
+### 2. Operational Considerations
+- **Latency Optimization:** Pre-computing embeddings, utilizing asynchronous non-blocking event loops, and streaming tokens via Server-Sent Events (SSE).
+- **Security & Sandboxing:** Validating inputs before ingestion, sanitizing LLM outputs, and isolating tool execution environments.
+
+---
+
+## 💻 Production Implementation Walkthrough
+
+```python
+from typing import TypedDict, Annotated, List
+from langgraph.graph import StateGraph, END
+import operator
+
+# 1. Define State Schema
+class AgentState(TypedDict):
+    messages: Annotated[List[str], operator.add]
+    next_step: str
+
+# 2. Define Node Functions
+def analyze_input(state: AgentState):
+    print("Analyzing query...")
+    return {"messages": ["Query analyzed."], "next_step": "generate"}
+
+def generate_response(state: AgentState):
+    print("Generating response...")
+    return {"messages": ["Final response generated."], "next_step": "end"}
+
+# 3. Build StateGraph
+workflow = StateGraph(AgentState)
+workflow.add_node("analyze", analyze_input)
+workflow.add_node("generate", generate_response)
+
+workflow.set_entry_point("analyze")
+workflow.add_edge("analyze", "generate")
+workflow.add_edge("generate", END)
+
+app = workflow.compile()
+output = app.invoke({"messages": ["Hello Agent"], "next_step": ""})
+print(output)
+```
+
+---
+
+## 💡 Production Best Practices & Tips
+
+:::tip Production Deployment Guideline
+When deploying Parallel Workflows in LangGraph ｜ Agentic AI using LangGraph in enterprise environments, always configure automated retries with exponential backoff and telemetry tracing (such as OpenTelemetry or LangSmith).
+:::
+
+:::warning Common Failure Modes
+Watch out for state contamination across concurrent requests. Ensure each session or user interaction uses an isolated thread ID or execution context.
+:::
+
+---
+
+## 🎯 Key Takeaways & Quick Reference
+
+| Dimension | Production Standard | Pitfall to Avoid |
+| :--- | :--- | :--- |
+| **Execution** | Async / Non-blocking with timeouts | Synchronous blocking calls in event loops |
+| **Data Validation** | Strict Pydantic v2 schemas | Untyped dictionary access |
+| **Monitoring** | Distributed tracing & latency percentiles | Relying only on standard console logs |
+
+## ⏱️ Lecture Timeline & Key Topics
+
+| Timestamp | Key Topic / Concept Discussed |
+| :--- | :--- |
+| **00:00:00** | हाय गाइस, माय नेम इज निश एंड यू वेलकम टू... |
+| **00:15:07** | यहां पे आ जाएगा... |
+| **00:29:23** | मैं आपको बताता हूं। रिड्यूसर फंक्शन... |
+| **00:43:43** | बट प्रॉब्लम क्या है कि सिंस ये एट से और... |
+| **00:59:27** | में। बाय।... |
+
+
+
+---
+
+---
+
+## 📜 Complete Lecture Transcript (English)
+
+> **Language:** English | **Source:** `07 - Step By Step Process To Build MultiModal RAG With Langchain(PDF And Images).en.srt` | **Total Segments:** 23 | **Word Count:** ~7,589 words
+
+<details>
+<summary><b>Click to expand full chronological transcript (23 timestamped intervals)</b></summary>
+
+#### ⏱️ [00:00 ➔ 00:02]
+
+Hello guys, welcome to this new amazing module on understanding about multimodel rag. So guys till now specifically if I talk about you know we have discussed about creating different kind of rag applications and in that rag let's say that there are two main important components you know so let's say that I have my vector store and you know in this vector store how do we go ahead and store our data okay so let's say that we initially have some kind of data this data can be a PDF file, it can be a word doc file, it can be a database file, it can be any kind of files. Right? So usually for this particular data we convert this into chunks. Then further we use some kind of embedding models embedding models and we convert this into some kind of vector representation and we store everything inside our vector store. Right? Then what we do once we have everything in the vector store from this particular vector store we create a retriever. Why do we create a retriever? Because whenever we have any kind of new query that comes in, any type of new query that comes in, we will em we will perform an embedding on this particular query. And this query from the retriever can retrieve similar kind of results from the vector store. Okay. Then from this we get the top k documents. top k documents and we give it to the LLM model. The LLM model will finally be able to generate the output based on the prompt that we have given. So these are the two main fundamental
+
+#### ⏱️ [00:02 ➔ 00:04]
+
+modules that we specifically work on a rack pipeline. Yes, there are techniques like reanker, you can combine different different strategies like sparse and dense matrix. uh how to probably go ahead and do the retrieval how to apply filtering keywords and all we have discussed about this right but let's consider one specific use case in this particular data okay so let's say that I have a PDF file so this is my what my PDF file looks like okay in my PDF file I'll just go ahead and consider there are some kind of text data but let's say that I go ahead and add some more information over here in the form of images So here I have some kind of images. Let's say this particular image is a revenue of a company. Okay. So it is a kind of a revenue of a company. You have some textual information. Again you have some kind of images over here. Again you have text, right? Whenever we talk about multimodel rag in short multimodel is nothing but we are going to go ahead and use two important things. one is text plus images. So let's say that if in your data you have both text and images. Can you also take this particular image and do some kind of similar search you know let's say that I'll go ahead and ask hey tell me from the diagram in the page one can you talk about the findings or can you provide the summary right so from this particular document you know we should be able to retrieve this particular information based on this particular image and we should be able to generate the output so whenever we talk about multimodel whenever we talk about this kind of scenario Here we are working with both text and image data. Now we need to find out a way that how do we go ahead and store the text and the image data in the vector store.
+
+#### ⏱️ [00:04 ➔ 00:06]
+
+Obviously for storing the text data we know that we have applied different kind of embeddings but till now we have never seen that for images what kind of embeddings we can go ahead and apply right what kind of embeddings we can go ahead and apply so that we store this in a vector store and at the end of the day when we give a specific query how it is going to go ahead and do a search with respect to text and with respect to the images right and that all things we will specifically go ahead and discuss in this multimodel rag. Okay. And when I say multimodel, multimodel is very simple. Text plus images. When I talk about rag, I'm talking about creating this entire pipeline. So we will discuss about this. I will also probably go ahead and show you the entire step-by-step flow diagram how we are going to go ahead and implement this. Okay. Let's say that we have a PDF. In this PDF, we have some kind of text and images. The first thing that you actually require is a multimodel LLM. Okay, multimodel LLM. Now what does this basically mean? So till now you have worked with different different LLMs but those are specifically if I talk about a normal LLM like let's say GPD 3.5 GPD4 these LLMs are very specific to text generation means they are good at text generation okay when we talk about multimodel LLM these LLMs will are trained on both text and images. Okay, that basically means if you if you give a image parameter, let's say if you give image parameter to this LLM, this LLM will also be able to talk about like what is there in the images itself. If you ask anything related to text, then also they will be able to provide you some kind of responses. So whenever I
+
+#### ⏱️ [00:06 ➔ 00:08]
+
+talk about multimodel LLM, that basically means they have been trained in both text and images. So this kind of models we are going to use it. Okay. If I like to name some of the model in open AI if I take there are multiple there are many models that are available which are multimodel but we will do an application with GPT4. GPT4. Let me just go ahead and check in my code file so that you know you should um see again there are different different models which you can use right in our examples what we are going to specifically do is that we are going to use GPT4 model right so here specifically if I talk about it is nothing but GPT 4.1 I was just checking in my code like what model we have specifically used you can also use any other kind of model itself if you go in the openai documentation you'll be able to See this if I take one more example there is Google Germany model right if you go ahead and see Google Germany flash model specifically 2.5 version right so these is also a multimodel LM model okay that basically means it will be able to work in both text and images so we will consider these kind of models and we'll develop a entire rack pipeline okay now the most important thing is that what will be the steps that we really need to follow in order to solve this problem. So let's go ahead and discuss about the steps. Let's say the first thing is that I have a PDF document. So I'll go ahead and write this. So this is my PDF document. Okay. And in order to draw the steps I will just go ahead and write it in a much more clear way so that you should be able to see this. Okay. I will take this. Okay. Okay. So let's say this is my entire cycle that I'm
+
+#### ⏱️ [00:08 ➔ 00:10]
+
+actually the entire steps that I'm going to write it over here. So the first step let's say that I have my data source over here. Okay. So this is my PDF document. Let's say inside this PDF document you have both text and images. So from this PDF document the first step will be that I will go ahead and extract the text and images. Okay, first of all I will go ahead and extract text and images. So here let me go ahead and write it down for you. Extract text and images. Now the question rises for this how we are going to go ahead and extract text and images if we just use like some library should be there right because at the end of the day we have to read this PDF document and while reading the PDF document we should be able to distinguish which are the text and which are the images. So for this I'll be showing you that which library we'll be using. Okay. So this is my first step. Now in the second step is that let's say I go ahead and get this I I have completed this step. Okay. Then the second step is second and third. Let's let's consider this second and third. Okay. So the second step is that what I will do from this text we will convert this into chunks and from this we are going to perform embeddings because for text there will be different kind of embeddings right. Similarly over here for images we are going to go ahead and take this and we are going to perform the embeddings. Now the question arises crush how we are
+
+#### ⏱️ [00:10 ➔ 00:12]
+
+going to go ahead and do this. Do we use different model to probably different embedding model to handle the text and images separately or should we just use one model? The best idea is that we try to use a single model. Now for this which model we'll be using there is a model called as clip model. Right? So this clip I'll talk about the full form what exactly clip is you know. So this clip model is provided by open AI. Now how this model is basically trained this model is trained with images and text mapping. Okay. So there are like 400 million images. I think this model is basically trained with where we can and it is open source. Okay. So it is available in hugging face. We will try to use this specific model and what we are going to do is that based on the text we will try to convert that into embedding and based on images we'll also try to convert that into embedding. The reason of using one model is that because this model is already trained with images text mapped uh data set. You can consider in that way right. So there is a huge data set which is in already trained with. So this will actually go ahead and create a similar kind of vectors based on the text and the images. Okay. Then the next step over here what we are basically going to do from this once we are able to do this the next step will be that we will store this images in the base 64 format because that is the format that is actually required. Okay. will store this particular images as base 64. Okay. Now the next thing is that once we perform this particular embedding then we take both this embeddings and we store it in some kind of vector store. So let's say that I will go ahead and use a fs vector store where I'm going to go ahead and store this entire embeddings.
+
+#### ⏱️ [00:12 ➔ 00:14]
+
+This is my next step. Okay. So now I have my vector store ready. All I have to do is that I have to take a new query. So let's say that I go ahead and take a new query and from this particular query I will again use this clip clip model. Why I'll be using this clip model? So that I will be able to convert this query into a embedding. Right? So here I will just go ahead and write clip embed. Okay. So that basically means this clip model will be used to convert the query into an embedding embedding vectors. Okay. So once we do this the next step is that we will do a vector search from here. Vector search from here. So this will basically be my retriever. Once we do the retriever here we are going to get the top K documents and this top K documents will be specifically text plus image information text as image information then before sending it to the LLM model as I said here let's say that I'm using my multimodel LLM model that is open AI GPT 4 4.1 let's say if I'm using this specific model okay before I give this text and images it should be on a specific format so here we are going to convert this into a specific format and this format will be passed to the LLM model and finally we are going to get the multimodel answer multimodel answer so These are the steps that we are going to specifically follow. Okay, we are going to specifically follow in order to implement this entire
+
+#### ⏱️ [00:14 ➔ 00:16]
+
+multimodel rag. So this is my rag. The the format is necessary because models which are multimodel rag multimodel lm they require in some specific format from the retriever then only they will be able to provide you the answer. Okay. So this is the steps. So here you can see initially we took this PDF document. We'll read this document. We'll extract the text and images. Then we'll take the text convert that into chunk then convert into embeddings. Similarly images convert that into embedding. We'll use this clip uh model and it is from OpenAI. Uh the best part is that this is already trained with images to images to sentence uh mappings. Okay. Then we going to store this into a vector store. Then whenever we get a new query we'll be embedding this. Then from the retriever we'll hit the ve files vector and we'll get the information of text and images. Then we'll format it give it to the LLM model and finally we'll get the multimodel answer. Okay. So this is what we are specifically going to go ahead and do this. Okay. And the best part will be that when we are doing this right, you'll be able to see how efficient this is and how how easily you should be able to see this entire thing. Okay? Okay. And one more thing uh which I missed about whenever I talk about clip right. So the clip full form is clip full form is nothing but contrastive language image pre- training. We are going to specifically go ahead and use this. Okay. So I hope you you have understood this
+
+#### ⏱️ [00:16 ➔ 00:18]
+
+entire flow. But you can just see that this clip will be very very handy because it can process both text and images also. That's the best part about it. Okay. And usually in case of images it uses something called as vision transformer. In case of text it uses uh text encoder. Okay. I mean transformers. So if I see right since this clip if you see the architecture of this this has the combination of vision transformer plus transformer transformer is basically for images uh for text and vision transformer is for images right so I hope you like this particular video related to multimodel rag uh in the next video we are going to go ahead and do the practical implementation thank you so guys now Let's go ahead and implement the multimodel rag wherein let's say that our data source that we are going to probably go ahead and consider is PDF with images. Now if you remember this entire flow the first thing is that we will be considering the PDF document and then we will extract the text and images. Okay. So for this the example we have we are going to consider this specific PDF. Okay. And this PDF here you can see it's a very simple PDF just to show you one basic example I'm using this here in this particular PDF here you can see some important information is there like document summarizes the revenue trend across Q1 Q2 Q3 as illustrated in the chart below revenues grew steadily with the highest growth record in Q3 and here you have this all three charts okay I've not even mentioned Q1 Q2 Q3 but I've just given some text also Okay now considering this we will go ahead and try to ask some query and we'll see that whether it'll be able to whether my rag will be able to do this or not so I'm going to use that particular data set itself okay now
+
+#### ⏱️ [00:18 ➔ 00:20]
+
+coming back to our simple diagram over here right and from this you can see that the first step is very simple that is reading the PDF document and extracting the text and images. Okay. So, how do we go ahead and do this? So, for this we will be using this library which is called as pi mu PDF. Okay. Now, py mu pdf inside this there is a library called at fids. The best part about this library is that it is very good at text extraction, image extraction, speed and memory usage. So, we will go ahead and use this. If you see other libraries like pi PDF, PDF plumber, PDM minor, they're not that good. Okay. So how do we go ahead and do this? So first of all what we are going to go ahead and do is that I will import some of the libraries. Okay. So let me go ahead and import all the specific libraries which we are going to use it. Okay. So here you can see that we are importing libraries like fids. We are using library like document. I've already told you why we will be using clip. So for this we will be importing two important libraries from transformer clip processor and clip model. I'll discuss more about this. Then we are importing from pil import image so that we can play with the images. Along with this we import torch. Then we have langen.hat models importing it chat model prompt template human message cosign similarity. Then along with that you also have import base 64. I'm using recursive character text splitter for text and this is fires. This is the library that will be used in order to read the PDF. Okay. So now let me quickly go ahead and execute this. So once we execute this it'll take some amount of time but again it'll get executed. There are so many different libraries that we are importing. Okay. The next thing is that you know that I will be requiring as I
+
+#### ⏱️ [00:20 ➔ 00:22]
+
+said I will be requiring what clip model. Okay. And I've already told you what this clip model is. It is nothing but contrastive language image pre-training. Right? The main aim of this particular clip model is that after extracting the text and the image, you know, we will be using text, converting that into chunks and converting that into embedding. Similarly, if you have the images, we'll be converting that into embedding. And for that, we will be using this clip model itself. Okay. And this is again an open source model from OpenAI. So let me quickly go ahead and set up two important things. So first of all here we are going to load the clip models. Okay. So for clip model we require if you want to go ahead and load the clip model two things is basically required. One is processor and the other one is model. I will talk about it. Why do we require the processor also but before that I will go ahead and quickly import OS from env. I'm going to go ahead and import load_.env. I'll go ahead and initialize load env. Let's set up the environment. So set up the environment. Okay. Now for setting up the environment, I'll write OS dot environ. And here I'm going to go ahead and write open AI API key. And here I will just go ahead and write OS.get env. Now you may be thinking do am I doing this for the clip model? No, I'll be using the OpenAI multimodel LLM. Right. So for that, I'm just going and setting up this particular environment. Okay, now let's go ahead and initialize the clip model for unified embeddings. Okay, unified embeddings quickly. Let's do that. Okay, so first thing is that I will be going to hugging face. So let me just open the browser quickly for you.
+
+#### ⏱️ [00:22 ➔ 00:24]
+
+So here and here I will search for clip model hugging face. Okay. So here you can see instantiate all the information is probably over here. Okay. Clip is a multimodel vision and language model motivated by overcoming the fixed number of categories. All these things you can find all the clip checkpoints under openi organization. All these things are there right? You can read more about it and we are going to use this. Now for initializing the clip model two things is basically required over here. Okay. One I will give I will go ahead and create a variable called as clip model. And here I'm going to go ahead and write clip model dot from pre-trained. So I'm going to go ahead and directly call the model. And the model name again you can go to the hugging face and you can probably go ahead and check it. It is nothing but it is open clip vit base patch 32. Okay. So this is the model that we are going to specifically use and this is the model name which will be responsible in converting both the text into embeddings and images into embeddings. Okay. And along with this since we need to go ahead and use this particular model I will also go ahead and create clip processor. And here let me go ahead and write clip processor dot from from pre-trained. And here we are going to go ahead and write open AAI slash and for this the same model because we need and what is this what is this processor see for giving input to any of the model this processor this clip processor is making sure that whatever format is basically required over here right it'll try to convert in that particular format. Okay. So for the clip model you need to import these two things. One is the pre-processor and one is the model. Now what you can do is that I can just go ahead and write do eval. So just to see the entire clip
+
+#### ⏱️ [00:24 ➔ 00:26]
+
+model evaluation. Okay. So this is going to take some amount of time. Again it depends on system to system. So here you can see over here clip model is nothing but it is using a uh clip text transformer embeddings position encoding all these things and it is trying to convert this into 512 dimensions. Then you have this clip encoder. All this information you'll be able to see with respect to this particular model. Okay. So in the second step which I have already told you for this we are going to use this clip model from the open AI which will be able to do that and we have loaded it. Okay. Now coming to the next important step. We need to find out a way of embedding the images. Right? How do we go ahead and embed the images? basically take the image part and convert that into image vectors or image embeddings. Right? So for that we will go ahead and create two embedding functions embedding function where we are going to specifically use this clip models. Right? One is definition embeddage. Here we have to give our image data. Okay. and then we will go ahead and embed embed image using clip. Okay. Now whenever we have this image data how this image data will come I will talk about it in the later stages. Okay. Now first of all what we will do we will just go ahead and check whether this image if if is instance image data str if it is a path okay if I'm providing this image data in the form of path then we will open this image particularly with the help of this image library otherwise if it is an image let's say if you give directly the base 64 data then this will be just considered as the image data okay now once Once we have this image data since we need to convert this image into embedding vectors for this we are
+
+#### ⏱️ [00:26 ➔ 00:28]
+
+going to go ahead and use clip processor clip processor and inside this I'm going to go ahead and give my images is equal to image. Okay. And we are going to go ahead and return this in this particular format. Okay. So this is basically saying that hey you need to return the tensors in the form of a pyarch tensors itself. Okay. And this is actually available if you have some understanding with respect to deep learning and all. So what it does is that it is trying to convert the entire format into tensors. Right? Now the next thing is that we will also perform normalization. See once we get this right this will be my inputs that needs to be given to my clip model. Right? So here now I will write with torch.nd here we are going to take the image features. There's a function inside the clip model saying that clip model get image features this particular features based on this particular input I will be able to get it. This two line of code is basically normalizing the embeddings to unit vector okay to unit vector. This is what it is basically done because see every image dimensions will be different right. If we really want to convert that into a unit vector, we can basically go ahead and use this wherein we are taking the features and we are dividing it with by normalization by keeping the dimension as minus one and then finally we convert this into a numpy array. Okay. So this is how embedding with respect to images happen. Now you know that this clip model is also very good at converting the text into embeddings. So here you can see embed text using clip. So I've used the same clip processor. Here we are giving text return ter padding is equal to true, truncation is equal to true and maximum length we are given as 77 and again we are trying to normalize this. Here you can see instead of using get image feature we are given get text features. Okay. Now this text features will be very important so that it'll be able to convert the text into features. So for this particular function we give text for this part we
+
+#### ⏱️ [00:28 ➔ 00:30]
+
+give image data. But at the end of the day we are using both clip model and clip processor. Okay. So here also we are using clip model and clip processor. Perfect. So these two are the functions. One is embed text and one is embed image. Now you know that see we have completed this function. You have completed this function. Now let's go ahead and read this PDF document and extract the images. Okay. So first of all let me go ahead and give the process PDF. I give my PDF path. So let's say my PDF path is multi-model sample PDF. Okay, multimodel. So this is the PDF name, the same PDF which I have actually shown. Now I'll go ahead and write doc is equal to fits dot open and I'll give this PDF path. Okay, whatever the PDF path is. Okay. Now, initially what we'll do, we will try to create some variables. Okay. We will try to create some variable wherein we'll store all documents and embeddings. So, this is my all docs, all embeddings and image data store. Okay. So, we are creating this particular variable. Next step is that we will go ahead and use some kind of text splitter. So, text splitter is also required for images, right? So, here you can see I've used recursive character text. Okay, this see I'm copying and pasting those things which you already know. Okay, so that is the reason why I'm doing this. Okay, so now I have my doc. Okay, now with respect to the doc, see if I just go ahead and execute this and if I see what is my doc right here you can see doc fits open if I'm actually doing here you can actually see that this is what is my doc like it's a document of multimodel sample.pdf PDF guys. Now once I have this variable dog, now what I'm actually going to do is that I will iterate through all the documents that are available inside this and then I will
+
+#### ⏱️ [00:30 ➔ 00:32]
+
+first of all get my text data, convert it into a text chunks and then convert it into embeddings. Similarly for the image data, I will get all the images and probably convert that into image vectors. Okay, so that is what we are basically going to do. So I will write for I in sorry for I comm, page in I will use an enumerate function go inside my doc. Okay then I will first of all process the text. This is my first step. Then my second step is process the images. Okay. Now for processing the text first of all I will just go ahead and write text is equal to page dot page dot get text okay so we are going to go ahead and use this particular function once we go ahead and write this with this you are going to get all the text so I will write if text dot strip right we are just removing all the empty spaces dot strip not trip okay strip here we are going to go ahead and create a temporary document for splitting. Okay. So let me go ahead and do this and I will keep this in the form of a document data structure. Okay. So here this is my first step and we have done this. See temp doc document data structure page content is equal to text and metadata some of the information and remember for all the text data you need to keep the metadata as type is equal to text. Okay, this is really important. And then we are going and using the split documents for this. Okay. Now after this we will embed each chunk. See after this step we are going to go ahead and get the chunks. Right. So now I'm going to go ahead and embed each chunks using clip. So for chunk and text chunk we have used this embed function. Then I am combining all the embeddings over here inside this
+
+#### ⏱️ [00:32 ➔ 00:34]
+
+particular variable and all docs.append. If you remember what is embed text? Embed text is nothing but it is a function which is basically getting the text features right and it is normalizing and giving you back all those particular features right so that is what we have basically done over here right so guys now similarly for the images we need to follow this three important steps okay so I will just go ahead and quickly comment this for you so that there are a lot of code to be written so I really want I'm trying my best to probably teach you in a way so that you should be able to understand. Okay. So like for images I hope everybody has understood what we did right now for processing images we need to perform three important action. One is convert PDF image to PL format store as B 64 for my GPT uh for mean uh like my computer vision uh GPD model uh specifically and multimodel itself create clear embeddings for retrieval. Okay like how we did it for the text. Now we in this particular loop right we are already having this particular page. Now similarly what we will do I will go ahead and copy some code for you and tell you that what we will be doing. Okay. So here in the same loop we will go ahead and write like this. See I'm enumerating through every pages and there is a function called as get image. So this will actually get all the image information. As I said we need to convert the PDF image to PDL format. So this is what we are basically doing. Okay. Here you can see we are converting this into PILM image. Okay. And before that we need to convert our image information that we are getting into image bytes. Then we create a unique identifier just to name that particular image. So here you can see based on the index that particular image and image index we'll be getting this. Then we are storing the image as B 64 for later use for the GPT model whichever model we are specifically giving. And this pile image
+
+#### ⏱️ [00:34 ➔ 00:36]
+
+is getting saved with the format of PNG. Then I have B 64 image in encoded format. So this is basically storing the image as B 64. And finally we go ahead and embed using clip wherein I have to give the PIL image. Then I will get the embeddings and the variable that we have created right all embeddings inside this we will put that specific embedding also right. So all embeddings do append of embedding. Finally we go ahead and create the document for the image. Remember here you need to go ahead and put the metadata as type image and this will basically be your image id and this we get the all all documents itself. So this is what we are basically doing. This is nothing but processing the text. This is nothing but processing the image and step by step we have written it what you are doing it right. Please have a look onto the code step by step if you'll be able to understand all the code itself. Right? Here I have also written proper comment so that you should be able to understand it. So now once you go ahead and execute this, this has got executed successfully which looks good. Now uh if you go ahead and see like how many embeddings has got created and how many documents has got created you can go ahead and write just go ahead and execute it over here. All embeddings. This is how my all embedding looks like. Right. Similarly if you want to also go ahead and see some other embeddings you can also see this. Okay. So all embedding is there and there is also one variable called as all docs. So how many docs are basically there here you can see there are two docs which is absolutely good and with respect to this particular docs here you can see right image image id information image right and this is my text. So this is my type image this is my type text right so here we are able to get this. So this is perfect. Now the next step will be that we need to go ahead and create a vector store. So for creating a vector store I will just go ahead and create a unified files vector store. So I'm using that all embeddings over here
+
+#### ⏱️ [00:36 ➔ 00:38]
+
+right you can see over here I'm using that same all embeddings with inside this embedding arrays and then file dot from embeddings right from embeddings and there was also something called as from documents another function here we are going to use from embeddings wherein we are directly giving the embeddings itself right so here text embeddings is basically there uh I'm iterating through all documents and embedding array see if I just go ahead and see what is my embedding array also. You should be able to see this. Okay. So let's print this embedding array. So this is what is my embedding array for two sentences. Right? For two sentences. So I'm taking all the docs and I'm taking all the embedding arrays combining them in a zip and taking the page content. See if I do zip what will happen? See if I do zip of or if I just combine this all docs all docs comma embedding array right so here you can see that this is my page information this is my image information and for this this is my vector and for my second record this is my vector right and it is of 512 dimension which I've already told so we are iterating through we are getting the page content and we are putting it inside my text embeddings here embedding will be none because we have already done that embedding. So that is the reason we have used this function from embedding. So this becomes my vector store. So here is my vector store. Now from this particular vector store you can do anything. You can create a retriever. You can do whatever things you like. Right now quickly let's go ahead and initialize my LLA model. So for this we are going to use GPT 4.1. It is a multimodel and uh with the help of this particular model you can go ahead and implement uh you can implement a rack pipeline with multimodel rack. Okay. So this will be able to understand the text and this one. Right now this is done my entire uh this vector store is ready.
+
+#### ⏱️ [00:38 ➔ 00:40]
+
+Right now I can go ahead and use it in creating a ra pipeline. But before creating a ra pipeline I have to convert this vector store and probably show you how a search will basically happen. Okay. So here you can see uh with respect to this particular search here we have created a function called as retrieve model unified retrieval using clip embedding for both text and images because here is my vector store. So this will basically be my retrieval model right retrieval sorry. So whenever I give a query first of all we embed the text with this query we get the query embedding and then we search it in the vector store and here we are going to use say let me go ahead and write this particular code. Okay. So here what we need to do, we need to search based on the query embeddings, right? But now I already have this query embeddings. So I can directly what I can do I can go ahead and use I will create a variable results is equal to vector store dot there is a lot of method I told right similarity search by vector right there is similarity search relevant score. So here I can go ahead and directly do it with vector because I already have that query embedding. So here I will go ahead and write my embeddings is equal to query embedding query embedding double equal to I've written it okay single equal to query embedding whatever k value is k is equal to k right and if you remember what k is the value that we have given k is equal to 5 it should be small k okay query embedding why This uh is wrong. Let me check. Similarity search by vectors query embeddings. I think I have made some mistake in the spelling. Just a second. Okay. So here, oh there was an indentation issue. Okay. So query
+
+#### ⏱️ [00:40 ➔ 00:42]
+
+embedding similarity search by vector and then we are returning the results. Perfect. So here you can see that I will be able to retrieve the results from here. Okay. Now uh this retrieval model is just like a retriever right here you can see that from this retriever I am able to get some text on images right the top k element but we need to convert this into a format before we give it to our llm. So for that format we will go ahead and define one more function. Okay and now I will give you one assignment for this. Please go ahead and just check this function. Okay. So this function is called as create multimodel message. Create a message with both text and images for GPT4V. Okay. So here I've created a content content.append type is equal to text question and context. It's just like one template of information. I will separate the text and image document from the retrieve docs. Right? So retrieve docs is basically going to come from where? From this particular function. Right? We will go ahead and separate for text and images. Then if we have text docs we will create a separate text context for this. If there is an images we create separate image context for this. Here we give image URL because image URL is basically required along with the image data. Okay. So the GPT4 version that we are specifically using. And then finally we have this content. Okay we basically go ahead and return this human message. Now just go ahead and see this. Okay, just go ahead and see this how this message is basically created. There's a specific format that is required for GPT4 V.1 right and for that we use it over here the main fundamental is that whatever retrieve documents we are basically getting we are separating it with respect to text docs and image docs. Okay, now it's time that we go ahead and integrate this into a rag pipeline. So here inside this function you can see context docs I'm calling retrieval
+
+#### ⏱️ [00:42 ➔ 00:44]
+
+multi-doc based on the query then we are creating this multimodel message how the message the llm wants and finally we whatever docs context docs we are basically getting see from this particular message we are just invoking with the llm llm.invoke invoke and this is basically for printing the entire information. Okay, that's it, right? Context docs is nothing but we are printing all the information over here. If you want to see the response uh you can also go ahead and return the response.content over here, right? And this is basically printing all the relevant context that you have got from the retriever. Very simple, right? Two to three functions and uh you should be able to do this. Okay, then let's the exciting part is that we'll go ahead and check this out how things are working over here. Okay. So I will ask four different question if name is equal to underscore main first is how does the chart on page one. Let's go ahead and see this. How does the chart on page one show about revenue trends? Summarize the main findings on the document. What visual elements are present in the document? So this is the three question. I will print the query. We'll call this multimodel rack pipeline and we'll display it. So guys finally let's go ahead and execute this. And uh here I have given three questions which you can see what does the chart on page one shows about revenue trend summarize the findings from the document and all are there here we are basically calling the multi-ro multimodel rag pipeline and then we can see the answer. Okay. So what does the chart on page one show about revenue trends? So retrieve documents two documents text from page zero annual revenue this document this image from page zero um this information is basically getting displayed uh the chart on the page one shows the revenue steadily increase over three quarters Q1 had the lowest revenue blue bar see it is able to determine the blue bar right then summarize the main findings from the document text from zero this this is there main findings here you can see uh study revenue growth the document shows that revenue go Over the three quarters,
+
+#### ⏱️ [00:44 ➔ 00:44]
+
+the height of the bar increased from left to right, visually representing growth across three quarters. Right? And this visual elements align with the context provided in the text. So I hope you are able to see this amazing answers. But if you are following this, I think you should be able to see that how we created a retriever. Then how we created this particular format for the LLM and finally we are able to get the mod model answer for this. uh the main thing is that how do you generate this multimodel message and for this you need to see the documentation for the open AAI uh multimodel LLM models like how this specific message is basically required how the input is or how the format is required in order to call this LLM right so I hope you like this particular video now you can go ahead and play with any kind of PDFs and try to use this and see what all things you are able to get so I hope you like this particular video I will see you all in the next video thank you take Okay, bye-bye.
+
+</details>

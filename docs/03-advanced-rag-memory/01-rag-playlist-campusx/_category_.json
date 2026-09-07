@@ -1,0 +1,8 @@
+{
+  "label": "Advanced RAG Playbook (CampusX)",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Advanced RAG strategies including Corrective RAG (CRAG) and Self-RAG fact-checking architectures."
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "label": "Agentic AI with LangGraph (CampusX)",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Comprehensive journey from LangGraph basics to checkpointers, time-travel, HITL, and multi-agent workflows."
+  }
+}

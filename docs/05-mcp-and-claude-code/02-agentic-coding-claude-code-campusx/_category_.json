@@ -1,0 +1,8 @@
+{
+  "label": "Agentic Coding with Claude Code (CampusX)",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Mastering Claude Code CLI: slash commands, CLAUDE.md guidelines, spec-driven development, custom skills, and subagents."
+  }
+}

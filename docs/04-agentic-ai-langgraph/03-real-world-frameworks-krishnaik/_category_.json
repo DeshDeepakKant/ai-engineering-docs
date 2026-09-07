@@ -1,0 +1,8 @@
+{
+  "label": "Real-World Multi-Agent Frameworks (Krish Naik)",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Practical implementations with CrewAI, Agno (Phidata), SmolAgents, Langflow, and DeepSeek-R1 reasoning agents."
+  }
+}

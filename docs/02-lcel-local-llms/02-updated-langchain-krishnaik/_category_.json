@@ -1,0 +1,8 @@
+{
+  "label": "Updated LangChain Series (Krish Naik)",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Hands-on projects with LangChain, Ollama, Groq LPUs, AstraDB, ObjectBox, Pinecone hybrid search, and guardrails."
+  }
+}

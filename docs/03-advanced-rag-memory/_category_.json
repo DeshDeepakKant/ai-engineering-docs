@@ -1,0 +1,8 @@
+{
+  "label": "Module 3: Advanced RAG & Memory",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Corrective RAG (CRAG), Self-RAG, short/long-term memory architectures, and multimodal document retrieval."
+  }
+}

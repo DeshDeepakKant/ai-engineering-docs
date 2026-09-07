@@ -1,0 +1,8 @@
+{
+  "label": "Model Context Protocol Masterclass (CampusX)",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Anthropic's open MCP standard: protocol architecture, building custom Python servers, and client integration."
+  }
+}

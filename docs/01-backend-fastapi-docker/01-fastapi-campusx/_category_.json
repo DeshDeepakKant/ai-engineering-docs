@@ -1,0 +1,8 @@
+{
+  "label": "FastAPI for ML & GenAI",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Masterclass on building and deploying production machine learning APIs with FastAPI, Pydantic, and Docker."
+  }
+}

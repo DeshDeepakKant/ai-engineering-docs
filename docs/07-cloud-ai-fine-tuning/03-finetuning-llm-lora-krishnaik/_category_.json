@@ -1,0 +1,8 @@
+{
+  "label": "LLM Fine-Tuning with LoRA & QLoRA (Krish Naik)",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "PEFT, LoRA/QLoRA mathematical intuition, fine-tuning LLaMA 3 and Gemma models on custom datasets."
+  }
+}
