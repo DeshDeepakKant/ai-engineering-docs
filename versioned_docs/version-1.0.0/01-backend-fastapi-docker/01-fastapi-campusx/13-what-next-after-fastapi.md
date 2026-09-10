@@ -80,12 +80,12 @@ flowchart TD
 
 ## 🚀 The Next Steps in Your Curriculum
 
-1. **[Module 2: LCEL, Local LLMs & Tool Calling](/docs/category/module-2-lcel-local-llms--tool-calling):**
+1. **[Module 2: LCEL, Local LLMs & Tool Calling](/docs/1.0.0/category/module-2-lcel-local-llms--tool-calling):**
    Transition from standard web APIs to chaining prompts, parsers, and runnables using LangChain Expression Language (LCEL), and run local LLMs with Ollama and Groq LPUs.
-2. **[Module 3: Advanced RAG, Memory & Vector Search](/docs/category/module-3-advanced-rag--memory):**
+2. **[Module 3: Advanced RAG, Memory & Vector Search](/docs/1.0.0/category/module-3-advanced-rag--memory):**
    Master vector embeddings, ChromaDB/Pinecone, Corrective RAG (CRAG), and short/long-term episodic agent memory.
-3. **[Module 4: Agentic AI, LangGraph & Multi-Agents](/docs/category/module-4-agentic-ai--langgraph):**
+3. **[Module 4: Agentic AI, LangGraph & Multi-Agents](/docs/1.0.0/category/module-4-agentic-ai--langgraph):**
    Build persistent state machines, SQLite checkpointers, and multi-agent systems with LangGraph, CrewAI, and SmolAgents.
-4. **[Module 5: Model Context Protocol & Claude Code](/docs/category/module-5-mcp--claude-code):**
+4. **[Module 5: Model Context Protocol & Claude Code](/docs/1.0.0/category/module-5-mcp--claude-code):**
    Implement Anthropic's open MCP standard to build modular agent tools, and master autonomous coding with Claude Code CLI.
 

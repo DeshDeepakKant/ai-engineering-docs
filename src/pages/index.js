@@ -10,50 +10,50 @@ const MODULES = [
   {
     title: 'Module 1: Production Backend & Docker',
     emoji: '📦',
-    lessons: '13 Lessons',
-    description: 'Master high-throughput REST APIs with FastAPI, Pydantic v2 validation, Docker containerization, and AWS EC2 cloud deployment.',
+    lessons: '10 Master Lessons',
+    description: 'Master high-throughput REST APIs with FastAPI, Pydantic v2 data validation, ML model serving, and Docker containerization.',
     link: '/docs/category/module-1-production-backend--docker',
   },
   {
-    title: 'Module 2: LCEL, Local LLMs & Tool Calling',
+    title: 'Module 2: LangChain Mastery & Local LLMs',
     emoji: '🧠',
-    lessons: '38 Lessons',
-    description: 'LangChain Expression Language (LCEL), local LLMs with Ollama, ultra-fast Groq LPU inference, and vector databases.',
-    link: '/docs/category/module-2-lcel-local-llms--tool-calling',
+    lessons: '10 Master Lessons',
+    description: 'Unified LangChain masterclass (CampusX & Krish Naik): LCEL pipe operator, Runnables, Chat Models, Ollama on-device AI, and Guardrails.',
+    link: '/docs/category/module-2-langchain-mastery--local-llms',
   },
   {
-    title: 'Module 3: Advanced RAG & Memory',
+    title: 'Module 3: Advanced RAG & Conversational Memory',
     emoji: '🔍',
-    lessons: '15 Lessons',
-    description: 'Corrective RAG (CRAG), Self-RAG fact-checking, short/long-term episodic memory, and multimodal document retrieval.',
-    link: '/docs/category/module-3-advanced-rag--memory',
+    lessons: '10 Master Lessons',
+    description: 'Unified RAG & Memory masterclass: Loaders, chunking, vector stores, Hybrid Search (BM25), Corrective RAG (CRAG), Self-RAG, Multimodal RAG, and SQLite memory checkpointers.',
+    link: '/docs/category/module-3-advanced-rag--conversational-memory',
   },
   {
     title: 'Module 4: Agentic AI & LangGraph',
     emoji: '🤖',
-    lessons: '45 Lessons',
-    description: 'Production state graphs, cyclic agent loops, SQLite checkpointers, Human-in-the-Loop approvals, and multi-agent coordination.',
+    lessons: '10 Master Lessons',
+    description: 'Unified Agentic AI masterclass: ReAct cognitive loops, StateGraph state machines, cyclic workflows, human approval gates, SQL agents, CrewAI, and Smolagents.',
     link: '/docs/category/module-4-agentic-ai--langgraph',
   },
   {
     title: 'Module 5: Model Context Protocol (MCP) & Claude Code',
     emoji: '🔌',
-    lessons: '27 Lessons',
-    description: 'Anthropic open standard MCP protocol, building custom stdio/SSE servers and clients, and autonomous coding with Claude Code CLI.',
-    link: '/docs/category/module-5-mcp--claude-code',
+    lessons: '10 Master Lessons',
+    description: 'Unified MCP & Claude Code masterclass: Anthropic MCP standard, FastMCP local/remote servers, Claude Code CLI, CLAUDE.md spec-driven development, Plan Mode, and custom subagents.',
+    link: '/docs/category/module-5-model-context-protocol-mcp--claude-code',
   },
   {
     title: 'Module 6: LLM Evaluation & Observability',
     emoji: '📊',
-    lessons: '16 Lessons',
-    description: 'Benchmarking AI pipelines: Golden datasets, LLM-as-a-judge, RAG Triad with DeepEval and Ragas, and LangSmith observability.',
+    lessons: '8 Master Lessons',
+    description: 'Continuous AI evaluation: Golden datasets, LLM-as-a-Judge with rubrics, Hit Rate@K, MRR, G-Eval framework, and automated red-teaming.',
     link: '/docs/category/module-6-llm-evaluation--observability',
   },
   {
     title: 'Module 7: Cloud AI & LoRA Fine-Tuning',
     emoji: '☁️',
-    lessons: '15 Lessons',
-    description: 'AWS Bedrock serverless pipelines, SageMaker endpoint deployments, and parameter-efficient fine-tuning (PEFT/LoRA/QLoRA).',
+    lessons: '8 Master Lessons',
+    description: 'Enterprise cloud AI & fine-tuning: AWS Bedrock serverless models, SageMaker TGI endpoints, LoRA/QLoRA math, and hands-on SFTTrainer fine-tuning.',
     link: '/docs/category/module-7-cloud-ai--lora-fine-tuning',
   },
 ];
@@ -67,8 +67,8 @@ function HomepageHeader() {
           🚀 2026 Production AI Engineering Hub
         </Heading>
         <p className="hero__subtitle" style={{fontSize: '1.3rem', maxWidth: '850px', margin: '0 auto 24px'}}>
-          Curated masterclass documentation across <strong>169 video lectures</strong> from <strong>CampusX (Nitish Singh)</strong> and <strong>Krish Naik</strong>.
-          Turn video transcripts into production-grade architectures, code walkthroughs, and interview cheat sheets.
+          Unified masterclass documentation across <strong>7 core production modules</strong> synthesizing the complete curriculums of <strong>CampusX (Nitish Singh)</strong> and <strong>Krish Naik</strong>.
+          Deduplicated, beginner-friendly guided notes with step-by-step code breakdowns, diagrams, and zero clutter.
         </p>
         <div style={{display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap'}}>
           <Link
@@ -97,8 +97,8 @@ export default function Home() {
       <HomepageHeader />
       <main style={{padding: '48px 0', maxWidth: '1200px', margin: '0 auto', width: '90%'}}>
         <div style={{textAlign: 'center', marginBottom: '40px'}}>
-          <Heading as="h2" style={{fontSize: '2rem'}}>📚 Curriculum Modules (169 Total Lectures)</Heading>
-          <p style={{color: '#888'}}>Structured study guides with Mermaid diagrams, corrected code implementations, and lecture bookmarks.</p>
+          <Heading as="h2" style={{fontSize: '2rem'}}>📚 Unified Curriculum Modules (66 Master Lessons)</Heading>
+          <p style={{color: '#888'}}>Structured study guides with Mermaid diagrams, step-by-step code breakdowns, and production best practices.</p>
         </div>
         <div style={{
           display: 'grid',

@@ -1,0 +1,8 @@
+{
+  "label": "Module 1: Production Backend & Docker",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "Learn how to build, validate, containerize, and deploy production-grade API backends for Machine Learning and Generative AI applications."
+  }
+}

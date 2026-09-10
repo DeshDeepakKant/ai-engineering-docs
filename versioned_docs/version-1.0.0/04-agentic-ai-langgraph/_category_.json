@@ -1,0 +1,8 @@
+{
+  "label": "Module 4: Agentic AI & LangGraph",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Stateful agentic workflows, database checkpointers, human-in-the-loop approvals, and multi-agent coordination."
+  }
+}

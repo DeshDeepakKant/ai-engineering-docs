@@ -1,0 +1,8 @@
+{
+  "label": "Module 2: LangChain Mastery & Local LLMs",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "description": "LCEL declarative chains, Runnables, Chat Models, Prompts, Structured Outputs, Ollama local models, and Guardrails. Unified from CampusX & Krish Naik."
+  }
+}

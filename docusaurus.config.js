@@ -33,6 +33,17 @@ const config = {
         docs: {
           sidebarPath: './sidebars.js',
           routeBasePath: 'docs',
+          lastVersion: '2.0.0',
+          versions: {
+            '2.0.0': {
+              label: 'v2.0 (Clean & Unified Master)',
+              path: '',
+            },
+            '1.0.0': {
+              label: 'v1.0 (Original Raw Playlists)',
+              path: '1.0.0',
+            },
+          },
         },
         blog: false,
         theme: {
@@ -63,6 +74,11 @@ const config = {
             position: 'left',
             label: 'All Course Notes',
           },
+          {
+            type: 'docsVersionDropdown',
+            position: 'right',
+            dropdownActiveClassDisabled: true,
+          },
         ],
       },
       footer: {
@@ -72,15 +88,15 @@ const config = {
             title: 'Core Backend & Orchestration',
             items: [
               { label: 'Module 1: Backend & Docker', to: '/docs/category/module-1-production-backend--docker' },
-              { label: 'Module 2: LCEL & Local LLMs', to: '/docs/category/module-2-lcel-local-llms--tool-calling' },
-              { label: 'Module 3: Advanced RAG & Memory', to: '/docs/category/module-3-advanced-rag--memory' },
+              { label: 'Module 2: LangChain Mastery & Local LLMs', to: '/docs/category/module-2-langchain-mastery--local-llms' },
+              { label: 'Module 3: Advanced RAG & Memory', to: '/docs/category/module-3-advanced-rag--conversational-memory' },
               { label: 'Module 4: Agentic AI & LangGraph', to: '/docs/category/module-4-agentic-ai--langgraph' },
             ],
           },
           {
             title: 'Advanced Agentic & Production AI',
             items: [
-              { label: 'Module 5: MCP & Claude Code', to: '/docs/category/module-5-mcp--claude-code' },
+              { label: 'Module 5: MCP & Claude Code', to: '/docs/category/module-5-model-context-protocol-mcp--claude-code' },
               { label: 'Module 6: LLM Evaluation', to: '/docs/category/module-6-llm-evaluation--observability' },
               { label: 'Module 7: Cloud AI & Fine-Tuning', to: '/docs/category/module-7-cloud-ai--lora-fine-tuning' },
             ],

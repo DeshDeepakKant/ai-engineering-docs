@@ -1,0 +1,8 @@
+{
+  "label": "Module 7: Cloud AI & LoRA Fine-Tuning",
+  "position": 8,
+  "link": {
+    "type": "generated-index",
+    "description": "AWS Bedrock serverless pipelines, SageMaker endpoint deployments, and parameter-efficient fine-tuning (PEFT/LoRA/QLoRA)."
+  }
+}
