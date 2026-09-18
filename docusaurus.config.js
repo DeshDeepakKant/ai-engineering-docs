@@ -8,11 +8,10 @@ const config = {
   favicon: 'img/favicon.ico',
 
   url: 'https://deshdeepakkant.github.io',
-  baseUrl: '/docs/',
-
+  baseUrl: '/ai-engineering-docs/',
+  trailingSlash: false,
   organizationName: 'DeshDeepakKant',
   projectName: 'ai-engineering-docs',
-  deploymentBranch: 'main',
 
   onBrokenLinks: 'warn',
 
