@@ -1,8 +1,0 @@
-{
-  "label": "Module 4: Agentic AI & LangGraph",
-  "position": 4,
-  "link": {
-    "type": "generated-index",
-    "description": "ReAct pattern, StateGraph, cyclic workflows, database checkpointers, human-in-the-loop approvals, subgraphs, SQL agents, CrewAI, and Smolagents."
-  }
-}

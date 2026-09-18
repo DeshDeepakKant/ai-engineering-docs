@@ -1,8 +1,0 @@
-{
-  "label": "Module 5: Model Context Protocol (MCP) & Claude Code",
-  "position": 5,
-  "link": {
-    "type": "generated-index",
-    "description": "Model Context Protocol (MCP) architecture, local and remote servers, MCP clients, Claude Code CLI, CLAUDE.md spec-driven development, Plan Mode, and custom subagents."
-  }
-}
