@@ -1,8 +1,0 @@
-{
-  "label": "LangGraph & MCP Architecture (Krish Naik)",
-  "position": 2,
-  "link": {
-    "type": "generated-index",
-    "description": "Agentic chatbot architecture, LangGraph + MCP integration, and vector ingestion pipelines."
-  }
-}

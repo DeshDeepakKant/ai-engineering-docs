@@ -1,8 +1,0 @@
-{
-  "label": "Module 1: Production Backend & Docker",
-  "position": 1,
-  "link": {
-    "type": "generated-index",
-    "description": "FastAPI, RESTful APIs, Pydantic data validation, ML model serving, and Docker containerization."
-  }
-}
