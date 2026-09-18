@@ -7,11 +7,12 @@ const config = {
   tagline: 'Production-Grade Notes, Architecture Diagrams & Code Walkthroughs (CampusX & Krish Naik)',
   favicon: 'img/favicon.ico',
 
-  url: 'https://ai-engineering-hub.local',
-  baseUrl: '/',
+  url: 'https://deshdeepakkant.github.io',
+  baseUrl: '/docs/',
 
-  organizationName: 'anya',
+  organizationName: 'DeshDeepakKant',
   projectName: 'ai-engineering-docs',
+  deploymentBranch: 'main',
 
   onBrokenLinks: 'warn',
 
