@@ -12,6 +12,7 @@ const config = {
   trailingSlash: false,
   organizationName: 'DeshDeepakKant',
   projectName: 'ai-engineering-docs',
+  deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'warn',
 
